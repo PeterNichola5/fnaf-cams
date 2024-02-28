@@ -61,9 +61,9 @@ export default {
       this.stompClient.connect({},
         frame => {
           this.connected = true;
-          console.log(`frame: ${frame}`);
+          console.log(`frame: ${frame.headers["user-name"]}`);
           this.stompClient.subscribe("/role", tick => {
-            console.log(tick);
+            console.log(`x: ${tick}`);
             this.recieved_messages.push(JSON.parse(tick.body).content);
           });
         },
