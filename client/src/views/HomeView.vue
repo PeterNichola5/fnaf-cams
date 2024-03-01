@@ -36,7 +36,6 @@ export default {
       audio: true,
       video: { width: 500, height: 500, facingMode: 'environment'},
     }).then(stream => {
-      console.log(`STREAM: ${stream.toString()}`)
 
       this.media = stream;
       this.connect();
@@ -51,10 +50,13 @@ export default {
           this.connected = true;
           console.log(`Connection Status: ${this.connected}`)
           console.log(`frame: ${frame.headers["user-name"]}`);
-          this.stompClient.subscribe("/role", tick => {
+          this.stompClient.subscribe("/user/queue/role", tick => {
             console.log(`x: ${tick}`);
             this.recieved_messages.push(JSON.parse(tick.body).content);
+            console.log(`role response: ${JSON.parse(tick.body).role}`);
           });
+
+          this.stompClient.send('/app/role', 'role?');
         },
         error => {
           console.log(error);
@@ -62,6 +64,7 @@ export default {
 
         }
       );
+      
     }
   },
   components: {

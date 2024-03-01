@@ -26,8 +26,10 @@ public class WsController {
         this.focusedSrcId = null;
     }
 
-    @SubscribeMapping("/role")
+    @MessageMapping("/role")
+    @SendToUser("/queue/role")
     public RoleAssignment assignRole(Principal user) {
+        System.out.println("called sub to role");
         RoleAssignment role;
         if(this.hostId == null) {
             role = new RoleAssignment(user.getName(), true);
