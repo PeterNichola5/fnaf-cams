@@ -1,13 +1,12 @@
 
 
 <template>
-  <div v-if="connected">Waiting for connection</div>
+  <div v-if="!connected">Waiting for connection</div>
   <main v-else>
     HOME
     <p>{{ devices }}</p>
     <div>
-      <video ref="video"></video>
-      <button v-on:click="toggleLight">Flashlight</button>
+      <video ref="video" :srcObject="media" autoplay></video>
     </div>
   </main>
 </template>
@@ -25,11 +24,10 @@ export default {
       isLightOn: false,
       recieved_messages: [],
       send_message: null,
-      connected: false
+      connected: false,
     }
   },
   mounted() {
-    this.connect();
 
     let availableDevices = navigator.mediaDevices;
     availableDevices.enumerateDevices().then(results => this.devices = results);
@@ -38,29 +36,20 @@ export default {
       audio: true,
       video: { width: 500, height: 500, facingMode: 'environment'},
     }).then(stream => {
-      this.$refs.video.srcObject = stream;
-      this.$refs.video.play();
+      console.log(`STREAM: ${stream.toString()}`)
+
       this.media = stream;
+      this.connect();
     });
   },
   methods: {
-    toggleLight() {
-      if(this.media === null) return;
-      this.isLightOn = !this.isLightOn;
-      console.log(this.media.getVideoTracks()[0].getSettings());
-      this.media.getVideoTracks()[0].applyConstraints({
-        torch: true
-      });
-
-      this.devices = this.media.getVideoTracks()[0].getConstraints();
-
-    },
     connect() {
       this.socket = new SockJs("https://localhost:8080/ws");
       this.stompClient = Stomp.over(this.socket);
       this.stompClient.connect({},
         frame => {
           this.connected = true;
+          console.log(`Connection Status: ${this.connected}`)
           console.log(`frame: ${frame.headers["user-name"]}`);
           this.stompClient.subscribe("/role", tick => {
             console.log(`x: ${tick}`);
@@ -70,6 +59,7 @@ export default {
         error => {
           console.log(error);
           this.connected = false;
+
         }
       );
     }
