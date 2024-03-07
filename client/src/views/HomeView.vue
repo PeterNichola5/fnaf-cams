@@ -13,7 +13,7 @@
 
 <script>
 
-import SockJs from "sockjs-client/dist/sockjs";
+import SockJS from "sockjs-client/dist/sockjs";
 import Stomp from "webstomp-client";
 
 export default {
@@ -22,52 +22,66 @@ export default {
       devices: null,
       media: null,
       isLightOn: false,
-      recieved_messages: [],
       send_message: null,
       connected: false,
-    }
+      background: 'black'
+    };
   },
   mounted() {
-
     let availableDevices = navigator.mediaDevices;
     availableDevices.enumerateDevices().then(results => this.devices = results);
-    console.log(availableDevices);
+
     availableDevices.getUserMedia({
       audio: true,
       video: { width: 500, height: 500, facingMode: 'environment'},
     }).then(stream => {
-
       this.media = stream;
       this.connect();
     });
   },
+  beforeUnmount() {
+    this.stompClient.disconnect({});
+  },
   methods: {
     connect() {
-      this.socket = new SockJs("https://localhost:8080/ws");
+      this.socket = new SockJS("https://localhost:8080/ws");
       this.stompClient = Stomp.over(this.socket);
+
       this.stompClient.connect({},
         frame => {
           this.connected = true;
-          console.log(`Connection Status: ${this.connected}`)
-          console.log(`frame: ${frame.headers["user-name"]}`);
-          this.stompClient.subscribe("/user/queue/role", tick => {
-            console.log(`x: ${tick}`);
-            this.recieved_messages.push(JSON.parse(tick.body).content);
-            console.log(`role response: ${JSON.parse(tick.body).role}`);
+          console.log(this.$store);
+          this.$store.commit('SET_ID', frame.headers["user-name"]);
+
+          let roleSub = this.stompClient.subscribe("/user/queue/role", tick => {
+            const myRole = JSON.parse(tick.body).role;
+            console.log(`role response: ${tick}`);
+            console.log(`assigned role: ${myRole}`);
+
+            this.$store.commit('SET_ROLE', myRole);
+
+            roleSub.unsubscribe();
+            console.log(`role in State: ${this.$store.state.role}`);
+            if(this.$store.state.role === 'HOST') {
+              this.$router.push({ name: 'host' });
+            } else {
+              this.stompClient.subscribe("/user/topic/sources", srcTick => {
+                this.background = JSON.parse.apply(srcTick.body).isFocused ? 'white' : 'black';
+              });
+            }
           });
 
-          this.stompClient.send('/app/role', 'role?');
+          this.stompClient.send('/app/role', 'ROLE REQUEST');
         },
         error => {
           console.log(error);
           this.connected = false;
-
         }
       );
-      
     }
   },
+
   components: {
   }
-}
+};
 </script>

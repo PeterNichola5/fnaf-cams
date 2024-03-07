@@ -2,6 +2,8 @@ package com.fnafgame.WebsocketServer.controllers;
 
 import com.fnafgame.WebsocketServer.models.FocusPacket;
 import com.fnafgame.WebsocketServer.models.RoleAssignment;
+import jakarta.websocket.OnClose;
+import jakarta.websocket.Session;
 import org.springframework.messaging.handler.annotation.DestinationVariable;
 import org.springframework.messaging.handler.annotation.MessageMapping;
 import org.springframework.messaging.handler.annotation.SendTo;
@@ -26,10 +28,17 @@ public class WsController {
         this.focusedSrcId = null;
     }
 
+    @OnClose
+    public void closedConnectionHandler(Session session) {
+        System.out.println("CONNECTION CLOSED:");
+        System.out.println(session.getId());
+        System.out.println(session.getUserPrincipal().getName());
+    }
+
+
     @MessageMapping("/role")
     @SendToUser("/queue/role")
     public RoleAssignment assignRole(Principal user) {
-        System.out.println("called sub to role");
         RoleAssignment role;
         if(this.hostId == null) {
             role = new RoleAssignment(user.getName(), true);
