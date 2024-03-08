@@ -3,71 +3,45 @@
 </template>
 
 <script>
+
 import SockJS from "sockjs-client/dist/sockjs";
 import Stomp from "webstomp-client";
 
 export default {
   data() {
     return {
-      devices: null,
-      media: null,
-      isLightOn: false,
-      send_message: null,
-      connected: false,
-      background: 'black'
+      numOfConnections: 0,
+      connections: {}
     };
   },
   mounted() {
-    let availableDevices = navigator.mediaDevices;
-    availableDevices.enumerateDevices().then(results => this.devices = results);
-
-    availableDevices.getUserMedia({
-      audio: true,
-      video: { width: 500, height: 500, facingMode: 'environment'},
-    }).then(stream => {
-      this.media = stream;
-      this.connect();
-    });
+    this.stompClient = this.$store.state.stompClient;
+    this.stompClient.subscribe("/topic/offer", this.handleOffer);
   },
   beforeUnmount() {
     this.stompClient.disconnect({});
   },
   methods: {
-    connect() {
-      this.socket = new SockJS("https://localhost:8080/ws");
-      this.stompClient = Stomp.over(this.socket);
+    async handleOffer(tick) {
+      const connectionId = JSON.parse(tick.body).id;
+      const sdpOffer = JSON.parse(tick.body).offer;
+      this.connections[`stream${++this.numOfConnections}`] = {
+        id: connectionId,
+        pc: new RTCPeerConnection(),
+        stream: new MediaStream()
+      };
+      await this.connections[`stream${this.numOfConnections}`].pc.setRemoteDescription(sdpOffer);
 
-      this.stompClient.connect({},
-        frame => {
-          this.connected = true;
-          console.log(this.$store);
-          this.$store.commit('SET_ID', frame.headers["user-name"]);
+      const answer = await this.connections[`stream${this.numOfConnections}`].pc.createAnswer();
 
-          let roleSub = this.stompClient.subscribe("/user/queue/role", tick => {
-            const myRole = JSON.parse(tick.body).role;
-            console.log(`role response: ${tick}`);
-            console.log(`assigned role: ${myRole}`);
+      await this.connections[`stream${this.numOfConnections}`].pc.setLocalDescription(answer);
 
-            this.$store.commit('SET_ROLE', myRole);
+      console.log(answer);
 
-            roleSub.unsubscribe();
-            console.log(`role in State: ${this.$store.state.role}`);
-            if(this.$store.state.role === 'HOST') {
-              this.$router.push({ name: 'host' });
-            } else {
-              this.stompClient.subscribe("/user/topic/sources", srcTick => {
-                this.background = JSON.parse.apply(srcTick.body).isFocused ? 'white' : 'black';
-              });
-            }
-          });
-
-          this.stompClient.send('/app/role', 'ROLE REQUEST');
-        },
-        error => {
-          console.log(error);
-          this.connected = false;
-        }
-      );
+      this.stompClient.send('/app/offerResponse/' + connectionId, `${JSON.stringify(answer)}`);
+      this.connections[`stream${this.numOfConnections}`].pc.ontrack = e => {
+        console.log(e.streams);
+      }
     }
   },
 
