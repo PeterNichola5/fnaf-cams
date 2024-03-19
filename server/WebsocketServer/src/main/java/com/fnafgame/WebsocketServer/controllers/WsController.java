@@ -106,8 +106,7 @@ public class WsController {
     }
 
     @MessageMapping("/ice-candidate")
-    @SendTo("/topic/webrtc_msg")
-    public WebRTCPacket<ICECandidate> sendCandidateToHost(@RequestBody ICECandidate iceCandidate, Principal principal) {
+    public void sendCandidateToHost(@RequestBody ICECandidate iceCandidate, Principal principal) {
         System.out.println("candidate received . . . \n============\n" + iceCandidate.toString());
 
         WebRTCPacket<ICECandidate> newCandidate = null;

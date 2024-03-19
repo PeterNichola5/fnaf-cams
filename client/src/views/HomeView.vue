@@ -24,7 +24,9 @@
         send_message: null,
         connected: false,
         background: 'black',
-        pc: null
+        pc: null,
+        pendingIceCandidates: []
+
       };
     },
     mounted() {

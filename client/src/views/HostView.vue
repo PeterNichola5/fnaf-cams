@@ -10,28 +10,40 @@
 export default {
   data() {
     return {
-      numOfConnections: 0,
-      connections: {}
+      connectionIndexs: {},
+      connections: []
     };
   },
+
   mounted() {
     this.stompClient = this.$store.state.stompClient;
     this.stompClient.subscribe("/topic/webrtc_msg", this.handleMsg);
   },
+
   beforeUnmount() {
     // this.stompClient.disconnect({});
   },
+
   methods: {
     handleMsg(tick) {
+      this.stompClient.send('/app/processing-status');
       let answer;
       const msg = JSON.parse(tick.body);
       const msgType = msg.type;
       const messagerId = msg.id;
       const content = msg.content;
+      let msgIndex = this.connectionIndexs[messagerId];
       console.log(`BODY: ${JSON.parse(tick.body).type}`);
+
+      if(msgIndex === null) {
+        this.connectionIndexs[messagerId] = this.connections.length;
+        msgIndex = this.connections.length;
+        this.connections.push({id: messagerId, pc: new RTCPeerConnection(), stream: new MediaStream()})
+      }
       switch(msgType) {
         case 'ICE_CANDIDATE':
           //HANDLE ICE CANDIDATE
+          this.connections[msg].pc.add
         break;
         case 'OFFER':
           //HANDLE OFFER
@@ -42,8 +54,9 @@ export default {
       }
       const connectionId = JSON.parse(tick.body).id;
       const sdpOffer = JSON.parse(tick.body).offer;
-      this.connections[`stream${++this.numOfConnections}`] = {
-        id: connectionId,
+      this.numOfConnections = this.numOfConnections + 1;
+      this.connections[`src${this.numOfConnections}`] = {
+        id: messagerId,
         pc: new RTCPeerConnection(),
         stream: new MediaStream()
       };
