@@ -1,4 +1,4 @@
-package com.fnafgame.WebsocketServer.models;
+package com.fnafgame.WebsocketServer.models.webrtc;
 
 public class SDP {
     private final String type;
@@ -15,5 +15,10 @@ public class SDP {
 
     public String getType() {
         return type;
+    }
+
+    @Override
+    public String toString() {
+        return "TYPE: " + this.type + ", SDP: " + this.sdp;
     }
 }

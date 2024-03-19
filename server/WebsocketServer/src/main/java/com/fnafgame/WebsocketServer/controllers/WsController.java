@@ -1,9 +1,8 @@
 package com.fnafgame.WebsocketServer.controllers;
 
 import com.fnafgame.WebsocketServer.models.FocusPacket;
-import com.fnafgame.WebsocketServer.models.Offer;
+import com.fnafgame.WebsocketServer.models.webrtc.*;
 import com.fnafgame.WebsocketServer.models.RoleAssignment;
-import com.fnafgame.WebsocketServer.models.SDP;
 import jakarta.websocket.OnClose;
 import jakarta.websocket.Session;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -12,7 +11,6 @@ import org.springframework.messaging.handler.annotation.MessageMapping;
 import org.springframework.messaging.handler.annotation.SendTo;
 import org.springframework.messaging.simp.SimpMessagingTemplate;
 import org.springframework.messaging.simp.annotation.SendToUser;
-import org.springframework.messaging.simp.annotation.SubscribeMapping;
 import org.springframework.stereotype.Controller;
 import org.springframework.web.bind.annotation.CrossOrigin;
 import org.springframework.web.bind.annotation.PathVariable;
@@ -59,16 +57,29 @@ public class WsController {
 
     @MessageMapping("/offerResponse/{srcId}")
     public void sendAnswerToUser(@RequestBody SDP responseSdp, @DestinationVariable String srcId) {
-        simpMessagingTemplate.convertAndSendToUser(srcId, "/queue/answer", responseSdp);
+        simpMessagingTemplate.convertAndSendToUser(srcId, "/queue/host_msg", responseSdp);
     }
 
     @MessageMapping("/offer")
-    @SendTo("/topic/offer")
-    public Offer sendOfferToHost(@RequestBody SDP sdp, Principal principal) {
-        Offer offer = null;
+    @SendTo("/topic/webrtc_msg")
+    public WebRTCPacket<SDP> sendOfferToHost(@RequestBody SDP sdp, Principal principal) {
+        System.out.println("offer received . . . \n============\n" + sdp.toString());
+        WebRTCPacket<SDP> offer = null;
         String userId = principal.getName();
-        offer = new Offer(userId, sdp);
+        offer = new WebRTCPacket<>(userId, WebRTCPacketType.OFFER, sdp);
+        System.out.println("Packet Constructed ------------[OFFER]------------: \n" + offer.toString());
         return offer;
+    }
+
+    @MessageMapping("/ice-candidate")
+    @SendTo("/topic/webrtc_msg")
+    public WebRTCPacket<ICECandidate> sendCandidateToHost(@RequestBody ICECandidate iceCandidate, Principal principal) {
+        System.out.println("candidate received . . . \n============\n" + iceCandidate.toString());
+        WebRTCPacket<ICECandidate> newCandidate = null;
+        String userId = principal.getName();
+        newCandidate = new WebRTCPacket<>(userId, WebRTCPacketType.ICE_CANDIDATE, iceCandidate);
+        System.out.println("Packet Constructed: \n" + newCandidate.toString());
+        return newCandidate;
     }
 
     @MessageMapping("/hostcmd/{id}")

@@ -69,16 +69,15 @@
                 //   this.background = JSON.parse.apply(srcTick.body).isFocused ? 'white' : 'black';
                 // });
                 this.establishOffer();
-                console.log(this.pc);
-                this.stompClient.subscribe("/user/queue/answer", ansTick => {
-                  console.log(JSON.parse(ansTick.body));
+                this.stompClient.subscribe("/user/queue/host_msg", ansTick => {
 
                   const packet = {
                     connection: this.pc,
                     desc: JSON.parse(ansTick.body)
                   };
-
-                  this.$store.commit('SET_REMOTE_LOCATION', packet);
+                  this.pc.setRemoteDescription(packet.desc);
+                  console.log(this.pc);
+                  // this.$store.commit('SET_REMOTE_LOCATION', packet)
                 });
               }
             });
@@ -99,15 +98,12 @@
         };
 
         this.pc = new RTCPeerConnection();
-        console.log(this.pc);
+        console.log(this.media);
         this.media.getTracks().forEach(track => {
           this.pc.addTrack(track, this.media);
         });
 
-        this.pc.addEventListener('icecandidate', e => {
-          console.log('new ICE candidate found: ' + e);
-          //TODO send candidate to Host
-        })
+        
 
         let hostOffer = null;
 
@@ -118,7 +114,13 @@
           })
           .then(() => {
             this.stompClient.send("/app/offer", JSON.stringify(hostOffer));
+            this.pc.addEventListener('icecandidate', e => {
+              console.log('new ICE candidate found: ' + e.candidate);
+              if(e.candidate) this.stompClient.send("/app/ice-candidate", JSON.stringify(e.candidate));
+              //TODO send candidate to Host
+            });
           });
+        
       }
     },
 
