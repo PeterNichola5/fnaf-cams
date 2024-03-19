@@ -21,11 +21,6 @@ export function createStore() {
       CREATE_WS_CONNECTION(state, url) {
         this.state.socket = new SockJS(url);
         this.state.stompClient = Stomp.over(this.state.socket);
-      },
-      SET_REMOTE_LOCATION(state, obj) {
-        console.log(obj.connection);
-        console.log(obj.desc);
-        obj.connection.setRemoteDescription(obj.desc);
       }
     },
 

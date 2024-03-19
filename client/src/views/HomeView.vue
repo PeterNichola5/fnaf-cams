@@ -46,24 +46,26 @@
   //   },
     methods: {
       connect() {
-          this.$store.commit('CREATE_WS_CONNECTION', "https://localhost:8080/ws");
+        //Initializes websocket connection
+        this.$store.commit('CREATE_WS_CONNECTION', "https://localhost:8080/ws");
         this.stompClient = this.$store.state.stompClient;
 
         this.stompClient.connect({},
           frame => {
             this.connected = true;
-            console.log(this.$store);
             this.$store.commit('SET_ID', frame.headers["user-name"]);
 
+            //Grabs role from server and reacts accordingly
             let roleSub = this.stompClient.subscribe("/user/queue/role", tick => {
               const myRole = JSON.parse(tick.body).role;
-              console.log(`role response: ${tick}`);
               console.log(`assigned role: ${myRole}`);
 
               this.$store.commit('SET_ROLE', myRole);
 
+              //Once role is determined, we don't need to be subscribed to the "/user/queue/role" endpoint any longer
               roleSub.unsubscribe();
-              console.log(`role in State: ${this.$store.state.role}`);
+
+              //Switches to hostview if the role assigned is HOST
               if(this.$store.state.role === 'HOST') {
                 this.$router.push({ name: 'host' });
               } else {
@@ -71,15 +73,12 @@
                 //   this.background = JSON.parse.apply(srcTick.body).isFocused ? 'white' : 'black';
                 // });
                 this.establishOffer();
+
+                //TODO: split into its own method for readability
                 this.stompClient.subscribe("/user/queue/host_msg", ansTick => {
 
-                  const packet = {
-                    connection: this.pc,
-                    desc: JSON.parse(ansTick.body)
-                  };
-                  this.pc.setRemoteDescription(packet.desc);
+                  this.pc.setRemoteDescription(JSON.parse(ansTick.body));
                   console.log(this.pc);
-                  // this.$store.commit('SET_REMOTE_LOCATION', packet)
                 });
               }
             });
@@ -116,10 +115,12 @@
           })
           .then(() => {
             this.stompClient.send("/app/offer", JSON.stringify(hostOffer));
+            
             this.pc.addEventListener('icecandidate', e => {
-              console.log('new ICE candidate found: ' + e.candidate);
+              console.log('new ICE candidate found');
+
+              //TODO: send ice candidates to pending ice candidates unless remote description has been set
               if(e.candidate) this.stompClient.send("/app/ice-candidate", JSON.stringify(e.candidate));
-              //TODO send candidate to Host
             });
           });
         
