@@ -16,15 +16,30 @@ export default {
   },
   mounted() {
     this.stompClient = this.$store.state.stompClient;
-    this.stompClient.subscribe("/topic/webrtc_msg", this.handleOffer);
+    this.stompClient.subscribe("/topic/webrtc_msg", this.handleMsg);
   },
   beforeUnmount() {
     // this.stompClient.disconnect({});
   },
   methods: {
-    handleOffer(tick) {
+    handleMsg(tick) {
       let answer;
-      console.log(`BODY: ${JSON.parse(tick.body)}`);
+      const msg = JSON.parse(tick.body);
+      const msgType = msg.type;
+      const messagerId = msg.id;
+      const content = msg.content;
+      console.log(`BODY: ${JSON.parse(tick.body).type}`);
+      switch(msgType) {
+        case 'ICE_CANDIDATE':
+          //HANDLE ICE CANDIDATE
+        break;
+        case 'OFFER':
+          //HANDLE OFFER
+        break;
+        default:
+          console.error("UNKNOWN MESSAGE TYPE: " + msgType);
+        break;
+      }
       const connectionId = JSON.parse(tick.body).id;
       const sdpOffer = JSON.parse(tick.body).offer;
       this.connections[`stream${++this.numOfConnections}`] = {

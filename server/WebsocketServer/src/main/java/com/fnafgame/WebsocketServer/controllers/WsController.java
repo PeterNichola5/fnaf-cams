@@ -1,5 +1,6 @@
 package com.fnafgame.WebsocketServer.controllers;
 
+import com.fnafgame.WebsocketServer.models.Client;
 import com.fnafgame.WebsocketServer.models.FocusPacket;
 import com.fnafgame.WebsocketServer.models.webrtc.*;
 import com.fnafgame.WebsocketServer.models.RoleAssignment;
@@ -17,6 +18,9 @@ import org.springframework.web.bind.annotation.PathVariable;
 import org.springframework.web.bind.annotation.RequestBody;
 
 import java.security.Principal;
+import java.util.HashMap;
+import java.util.Map;
+import java.util.NoSuchElementException;
 
 @CrossOrigin
 @Controller
@@ -24,6 +28,8 @@ public class WsController {
 
     private String hostId;
     private String focusedSrcId;
+
+    private Map<String, Client> clients;
     @Autowired
     private SimpMessagingTemplate simpMessagingTemplate;
 
@@ -31,6 +37,7 @@ public class WsController {
 
         this.hostId = null;
         this.focusedSrcId = null;
+        this.clients = new HashMap<>();
     }
 
     @OnClose
@@ -38,6 +45,25 @@ public class WsController {
         System.out.println("CONNECTION CLOSED:");
         System.out.println(session.getId());
         System.out.println(session.getUserPrincipal().getName());
+    }
+
+
+    @MessageMapping("/open-status")
+    public void updateStatusToOpen(Principal user) {
+        String id = user.getName();
+        try {
+            WebRTCPacket packet = this.clients.get(id).getNextMsg();
+            simpMessagingTemplate.convertAndSend("/topic/webrtc_msg", packet);
+        } catch(NoSuchElementException e) {
+            this.clients.get(id).setStatus("OPEN");
+        }
+    }
+
+    @MessageMapping("processing-status")
+    public void updateStatusToProcessing(Principal user) {
+        String id = user.getName();
+
+        this.clients.get(id).setStatus("PROCESSING");
     }
 
 
@@ -52,6 +78,8 @@ public class WsController {
             role = new RoleAssignment(user.getName());
         }
 
+        this.clients.put(user.getName(), new Client(user.getName()));
+
         return role;
     }
 
@@ -61,25 +89,38 @@ public class WsController {
     }
 
     @MessageMapping("/offer")
-    @SendTo("/topic/webrtc_msg")
-    public WebRTCPacket<SDP> sendOfferToHost(@RequestBody SDP sdp, Principal principal) {
+    public void sendOfferToHost(@RequestBody SDP sdp, Principal principal) {
         System.out.println("offer received . . . \n============\n" + sdp.toString());
+
         WebRTCPacket<SDP> offer = null;
         String userId = principal.getName();
         offer = new WebRTCPacket<>(userId, WebRTCPacketType.OFFER, sdp);
+
         System.out.println("Packet Constructed ------------[OFFER]------------: \n" + offer.toString());
-        return offer;
+
+        if(this.clients.get(this.hostId).getStatus().equals("PROCESSING")) {
+            this.clients.get(this.hostId).addToBacklog(offer);
+        } else {
+            simpMessagingTemplate.convertAndSend("/topic/webrtc_msg", offer);
+        }
     }
 
     @MessageMapping("/ice-candidate")
     @SendTo("/topic/webrtc_msg")
     public WebRTCPacket<ICECandidate> sendCandidateToHost(@RequestBody ICECandidate iceCandidate, Principal principal) {
         System.out.println("candidate received . . . \n============\n" + iceCandidate.toString());
+
         WebRTCPacket<ICECandidate> newCandidate = null;
         String userId = principal.getName();
         newCandidate = new WebRTCPacket<>(userId, WebRTCPacketType.ICE_CANDIDATE, iceCandidate);
+
         System.out.println("Packet Constructed: \n" + newCandidate.toString());
-        return newCandidate;
+
+        if(this.clients.get(this.hostId).getStatus().equals("PROCESSING")) {
+            this.clients.get(this.hostId).addToBacklog(newCandidate);
+        } else {
+            simpMessagingTemplate.convertAndSend("/topic/webrtc_msg", newCandidate);
+        }
     }
 
     @MessageMapping("/hostcmd/{id}")
