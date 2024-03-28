@@ -25,7 +25,7 @@
         connected: false,
         background: 'black',
         pc: null,
-        pendingIceCandidates: []
+        pendingIceCandidates:[]
 
       };
     },
@@ -76,9 +76,34 @@
 
                 //TODO: split into its own method for readability
                 this.stompClient.subscribe("/user/queue/host_msg", ansTick => {
+                  this.stompClient.send('/app/processing-status');
 
-                  this.pc.setRemoteDescription(JSON.parse(ansTick.body));
+                  const msg = JSON.parse(ansTick.body);
+                  console.log(msg)
+                  const msgType = msg.type;
+                  const content = msg.content;
                   console.log(this.pc);
+
+                  switch(msgType) {
+                    case 'ICE_CANDIDATE':
+                      //HANDLE ICE CANDIDATE
+                      this.pc.addIceCandidate(content);
+                      this.stompClient.send('/app/open-status');
+                    break;
+                    case 'ANSWER':
+                      //HANDLE OFFER
+                      this.pc.setRemoteDescription(content).then(() => {
+                        this.stompClient.send('/app/open-status');
+
+                        
+
+                      });
+                    break;
+                    default:
+                      console.error("UNKNOWN MESSAGE TYPE: " + msgType);
+                    break;
+                  }
+                  
                 });
               }
             });
@@ -103,25 +128,32 @@
         this.media.getTracks().forEach(track => {
           this.pc.addTrack(track, this.media);
         });
-
-        
-
         let hostOffer = null;
 
         this.pc.createOffer(offerOptions)
           .then(result => {
             hostOffer = result;
             this.pc.setLocalDescription(result);
-          })
-          .then(() => {
-            this.stompClient.send("/app/offer", JSON.stringify(hostOffer));
-            
+          }).then(() => {
+            console.log('pls:' + this.pc.localDescription);
             this.pc.addEventListener('icecandidate', e => {
               console.log('new ICE candidate found');
 
               //TODO: send ice candidates to pending ice candidates unless remote description has been set
-              if(e.candidate) this.stompClient.send("/app/ice-candidate", JSON.stringify(e.candidate));
+              console.log(`LC: ${this.pc.localDescription}`);
+              if(e.candidate) {
+                this.pendingIceCandidates.push(e.candidate);
+                console.log(this.pendingIceCandidates);
+              }
+              else {
+                this.pendingIceCandidates.forEach(candidate => {
+                  this.stompClient.send('/app/ice-candidate', JSON.stringify(candidate));
+                });
+                this.stompClient.send("/app/end-of-candidates", null);
+              }
             });
+            this.stompClient.send("/app/offer", JSON.stringify(hostOffer));
+            
           });
         
       }

@@ -80,9 +80,19 @@ public class WsController {
     }
 
     //Path for Host to send answer to client -- TODO: Rework channel to act as generic communication between host and client
-    @MessageMapping("/offerResponse/{srcId}")
+    @MessageMapping("/answer/{srcId}")
     public void sendAnswerToUser(@RequestBody SDP responseSdp, @DestinationVariable String srcId) {
-        simpMessagingTemplate.convertAndSendToUser(srcId, "/queue/host_msg", responseSdp);
+        System.out.println("answer received . . . \n============\n" + responseSdp.toString());
+
+        WebRTCPacket<SDP> answer = new WebRTCPacket<>(this.hostId, WebRTCPacketType.ANSWER, responseSdp);
+
+        System.out.println("Packet Constructed ------------[ANSWER]------------: \n" + answer.toString());
+
+        if(this.clients.get(srcId).getStatus().equals("PROCESSING")) {
+            this.clients.get(srcId).addToBacklog(answer);
+        } else {
+            simpMessagingTemplate.convertAndSendToUser(srcId, "/queue/host_msg", answer);
+        }
     }
 
 
@@ -121,6 +131,42 @@ public class WsController {
             this.clients.get(this.hostId).addToBacklog(newCandidate);
         } else {
             simpMessagingTemplate.convertAndSend("/topic/webrtc_msg", newCandidate);
+        }
+    }
+
+    @MessageMapping("/ice-candidate/{srcId}")
+    public void sendCandidateToHost(@RequestBody ICECandidate iceCandidate, @DestinationVariable String srcId) {
+        System.out.println("candidate received . . . \n============\n" + iceCandidate.toString());
+
+        WebRTCPacket<ICECandidate> newCandidate = new WebRTCPacket<>(this.hostId, WebRTCPacketType.ICE_CANDIDATE, iceCandidate);
+
+        System.out.println("Packet Constructed: \n" + newCandidate.toString());
+
+        //Checks whether to store candidate in queue or to send it straight away
+        if(this.clients.get(srcId).getStatus().equals("PROCESSING")) {
+            this.clients.get(srcId).addToBacklog(newCandidate);
+        } else {
+            simpMessagingTemplate.convertAndSendToUser(srcId, "/topic/webrtc_msg", newCandidate);
+        }
+    }
+
+    @MessageMapping("/end-of-candidates")
+    public void endClientCandidates(Principal user) {
+        WebRTCPacket<ICECandidate> end = new WebRTCPacket<>(user.getName(), WebRTCPacketType.ICE_CANDIDATE, null);
+        if(this.clients.get(this.hostId).getStatus().equals("PROCESSING")) {
+            this.clients.get(this.hostId).addToBacklog(end);
+        } else {
+            simpMessagingTemplate.convertAndSend("/queue/host_msg", end);
+        }
+    }
+
+    @MessageMapping("/end-of-candidates/{srcId}")
+    public void endClientCandidates(@DestinationVariable String srcId) {
+        WebRTCPacket<ICECandidate> end = new WebRTCPacket<>(this.hostId, WebRTCPacketType.ICE_CANDIDATE, null);
+        if(this.clients.get(srcId).getStatus().equals("PROCESSING")) {
+            this.clients.get(srcId).addToBacklog(end);
+        } else {
+            simpMessagingTemplate.convertAndSendToUser(srcId, "/queue/host_msg", end);
         }
     }
 

@@ -27,61 +27,52 @@ export default {
   methods: {
     handleMsg(tick) {
       this.stompClient.send('/app/processing-status');
-      let answer;
       const msg = JSON.parse(tick.body);
       const msgType = msg.type;
       const messagerId = msg.id;
       const content = msg.content;
       let msgIndex = this.connectionIndexs[messagerId];
-      console.log(`BODY: ${JSON.parse(tick.body).type}`);
+      console.log(`BODY: ${JSON.parse(tick.body)}`);
 
-      if(msgIndex === null) {
+      //Checks to see if a connection with the client has been initialized
+      if(msgIndex === undefined) {
         this.connectionIndexs[messagerId] = this.connections.length;
         msgIndex = this.connections.length;
         this.connections.push({id: messagerId, pc: new RTCPeerConnection(), stream: new MediaStream()})
+        console.log(this.connections);
       }
+
+      console.log(`CURRENT CONNECTION OBJECT: ${msgIndex}`);
+      const peerConnection = this.connections[msgIndex].pc;
       switch(msgType) {
         case 'ICE_CANDIDATE':
           //HANDLE ICE CANDIDATE
-          this.connections[msg].pc.add
+          peerConnection.addIceCandidate(content);
+          this.stompClient.send("/app/open-status");
         break;
         case 'OFFER':
           //HANDLE OFFER
+          peerConnection.setRemoteDescription(content)
+            .then(() => peerConnection.createAnswer())
+            .then(answer => peerConnection.setLocalDescription(answer))
+            .then(() => {
+              this.stompClient.send(`/app/answer/${messagerId}`, JSON.stringify(peerConnection.localDescription));
+              peerConnection.addEventListener('icecandidate', e => {
+                console.log('new ICE candidate found');
+
+                //TODO: send ice candidates to pending ice candidates unless remote description has been set
+                if(e.candidate) this.stompClient.send("/app/ice-candidate/" + messagerId, JSON.stringify(e.candidate));
+                else this.stompClient.send("app/end-of-candidates/" + messagerId, null);
+              });
+
+              this.stompClient.send("/app/open-status");
+            });
         break;
         default:
           console.error("UNKNOWN MESSAGE TYPE: " + msgType);
         break;
       }
-      const connectionId = JSON.parse(tick.body).id;
-      const sdpOffer = JSON.parse(tick.body).offer;
-      this.numOfConnections = this.numOfConnections + 1;
-      this.connections[`src${this.numOfConnections}`] = {
-        id: messagerId,
-        pc: new RTCPeerConnection(),
-        stream: new MediaStream()
-      };
-      this.connections[`stream${this.numOfConnections}`].pc.setRemoteDescription(sdpOffer).then(
-        () => {
-          this.connections[`stream${this.numOfConnections}`].pc.createAnswer()
-        }
-      ).then(result => {
-        answer = result;
-        this.connections[`stream${this.numOfConnections}`].pc.setLocalDescription(result)
-        }
-        
-      ).then(() => {
-        console.log(answer);
-
-        this.stompClient.send('/app/offerResponse/' + connectionId, `${JSON.stringify(answer)}`);
-        this.connections[`stream${this.numOfConnections}`].pc.ontrack = e => {
-          console.log(e.streams);
-        }
-
-        console.log(this.connections[`stream${this.numOfConnections}`].pc);
-      });
-
-
-      
+ 
     }
   },
 
