@@ -1,5 +1,10 @@
 <template>
-    <main></main>
+    <main><div>
+      <div v-if="!connections[0]">PLEASE WAIT</div>
+      <div v-else>
+        <video ref="video" :srcObject="connections[0].stream" autoplay></video>
+      </div>
+    </div></main>
 </template>
 
 <script>
@@ -39,10 +44,14 @@ export default {
         this.connectionIndexs[messagerId] = this.connections.length;
         msgIndex = this.connections.length;
         this.connections.push({id: messagerId, pc: new RTCPeerConnection(), stream: new MediaStream()})
+        this.connections[msgIndex].pc.ontrack = e => {
+                console.log(e.streams);
+                this.connections[msgIndex].stream = e.streams[0];
+              }
         console.log(this.connections);
       }
 
-      console.log(`CURRENT CONNECTION OBJECT: ${msgIndex}`);
+      console.log(this.connections[msgIndex].pc);
       const peerConnection = this.connections[msgIndex].pc;
       switch(msgType) {
         case 'ICE_CANDIDATE':
@@ -64,6 +73,8 @@ export default {
                 if(e.candidate) this.stompClient.send("/app/ice-candidate/" + messagerId, JSON.stringify(e.candidate));
                 else this.stompClient.send("app/end-of-candidates/" + messagerId, null);
               });
+
+
 
               this.stompClient.send("/app/open-status");
             });
