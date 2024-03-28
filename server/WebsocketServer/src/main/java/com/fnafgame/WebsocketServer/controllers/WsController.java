@@ -4,8 +4,6 @@ import com.fnafgame.WebsocketServer.models.Client;
 import com.fnafgame.WebsocketServer.models.FocusPacket;
 import com.fnafgame.WebsocketServer.models.webrtc.*;
 import com.fnafgame.WebsocketServer.models.RoleAssignment;
-import jakarta.websocket.OnClose;
-import jakarta.websocket.Session;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.messaging.handler.annotation.DestinationVariable;
 import org.springframework.messaging.handler.annotation.MessageMapping;
@@ -40,18 +38,14 @@ public class WsController {
         this.clients = new HashMap<>();
     }
 
-    @OnClose
-    public void closedConnectionHandler(Session session) {
-        System.out.println("CONNECTION CLOSED:");
-        System.out.println(session.getId());
-        System.out.println(session.getUserPrincipal().getName());
-    }
 
 
+    //updates the processing status of Client to 'OPEN'
     @MessageMapping("/open-status")
     public void updateStatusToOpen(Principal user) {
         String id = user.getName();
         try {
+            //If there are messages in the client's queue, the next message is sent and status is kept as 'PROCESSING'
             WebRTCPacket packet = this.clients.get(id).getNextMsg();
             simpMessagingTemplate.convertAndSend("/topic/webrtc_msg", packet);
         } catch(NoSuchElementException e) {
@@ -59,6 +53,7 @@ public class WsController {
         }
     }
 
+    //updates the processing status of Client to 'PROCESSING'
     @MessageMapping("processing-status")
     public void updateStatusToProcessing(Principal user) {
         String id = user.getName();
@@ -67,6 +62,7 @@ public class WsController {
     }
 
 
+    //Assigns a role to the Client
     @MessageMapping("/role")
     @SendToUser("/queue/role")
     public RoleAssignment assignRole(Principal user) {
@@ -83,11 +79,14 @@ public class WsController {
         return role;
     }
 
+    //Path for Host to send answer to client -- TODO: Rework channel to act as generic communication between host and client
     @MessageMapping("/offerResponse/{srcId}")
     public void sendAnswerToUser(@RequestBody SDP responseSdp, @DestinationVariable String srcId) {
         simpMessagingTemplate.convertAndSendToUser(srcId, "/queue/host_msg", responseSdp);
     }
 
+
+    //Path for Clients to send their offers to the host
     @MessageMapping("/offer")
     public void sendOfferToHost(@RequestBody SDP sdp, Principal principal) {
         System.out.println("offer received . . . \n============\n" + sdp.toString());
@@ -98,6 +97,7 @@ public class WsController {
 
         System.out.println("Packet Constructed ------------[OFFER]------------: \n" + offer.toString());
 
+        //Checks whether to store offer in queue or to send it straight away
         if(this.clients.get(this.hostId).getStatus().equals("PROCESSING")) {
             this.clients.get(this.hostId).addToBacklog(offer);
         } else {
@@ -105,6 +105,7 @@ public class WsController {
         }
     }
 
+    //Path for Clients to send ice candidates to host
     @MessageMapping("/ice-candidate")
     public void sendCandidateToHost(@RequestBody ICECandidate iceCandidate, Principal principal) {
         System.out.println("candidate received . . . \n============\n" + iceCandidate.toString());
@@ -115,6 +116,7 @@ public class WsController {
 
         System.out.println("Packet Constructed: \n" + newCandidate.toString());
 
+        //Checks whether to store candidate in queue or to send it straight away
         if(this.clients.get(this.hostId).getStatus().equals("PROCESSING")) {
             this.clients.get(this.hostId).addToBacklog(newCandidate);
         } else {
@@ -122,6 +124,19 @@ public class WsController {
         }
     }
 
+    @MessageMapping("/echo")
+    @SendTo("/topic/webrtc_msg")
+    public WebRTCPacket<String> clientEcho(Principal user) {
+        return new WebRTCPacket<String>(user.getName(), WebRTCPacketType.ECHO, "ANSWER PROCESSED AND ACCEPTED");
+    }
+
+    @MessageMapping("/echo/{srcId}")
+    public void hostEcho(Principal user, @DestinationVariable String srcId) {
+        WebRTCPacket<String> echo = new WebRTCPacket<>(user.getName(), WebRTCPacketType.ECHO, "OFFER PROCESSED AND ACCEPTED");
+        this.simpMessagingTemplate.convertAndSendToUser(srcId, "/queue/host_msg", echo);
+    }
+
+    //TODO: Path for host to communicate to Clients about camera focus
     @MessageMapping("/hostcmd/{id}")
     @SendToUser("/sources")
     public FocusPacket changeFocus(@DestinationVariable String id) {
