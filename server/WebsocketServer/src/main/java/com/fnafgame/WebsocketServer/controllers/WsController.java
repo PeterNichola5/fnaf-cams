@@ -1,18 +1,15 @@
 package com.fnafgame.WebsocketServer.controllers;
 
 import com.fnafgame.WebsocketServer.models.Client;
-import com.fnafgame.WebsocketServer.models.FocusPacket;
 import com.fnafgame.WebsocketServer.models.webrtc.*;
 import com.fnafgame.WebsocketServer.models.RoleAssignment;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.messaging.handler.annotation.DestinationVariable;
 import org.springframework.messaging.handler.annotation.MessageMapping;
-import org.springframework.messaging.handler.annotation.SendTo;
 import org.springframework.messaging.simp.SimpMessagingTemplate;
 import org.springframework.messaging.simp.annotation.SendToUser;
 import org.springframework.stereotype.Controller;
 import org.springframework.web.bind.annotation.CrossOrigin;
-import org.springframework.web.bind.annotation.PathVariable;
 import org.springframework.web.bind.annotation.RequestBody;
 
 import java.security.Principal;
@@ -79,7 +76,7 @@ public class WsController {
         return role;
     }
 
-    //Path for Host to send answer to client -- TODO: Rework channel to act as generic communication between host and client
+    //Path for Host to send answer to client
     @MessageMapping("/answer/{srcId}")
     public void sendAnswerToUser(@RequestBody SDP responseSdp, @DestinationVariable String srcId) {
         System.out.println("answer received . . . \n============\n" + responseSdp.toString());
@@ -169,38 +166,4 @@ public class WsController {
             simpMessagingTemplate.convertAndSendToUser(srcId, "/queue/host_msg", end);
         }
     }
-
-    @MessageMapping("/echo")
-    @SendTo("/topic/webrtc_msg")
-    public WebRTCPacket<String> clientEcho(Principal user) {
-        return new WebRTCPacket<String>(user.getName(), WebRTCPacketType.ECHO, "ANSWER PROCESSED AND ACCEPTED");
-    }
-
-    @MessageMapping("/echo/{srcId}")
-    public void hostEcho(Principal user, @DestinationVariable String srcId) {
-        WebRTCPacket<String> echo = new WebRTCPacket<>(user.getName(), WebRTCPacketType.ECHO, "OFFER PROCESSED AND ACCEPTED");
-        this.simpMessagingTemplate.convertAndSendToUser(srcId, "/queue/host_msg", echo);
-    }
-
-    //TODO: Path for host to communicate to Clients about camera focus
-    @MessageMapping("/hostcmd/{id}")
-    @SendToUser("/sources")
-    public FocusPacket changeFocus(@DestinationVariable String id) {
-        FocusPacket cmd;
-        if(focusedSrcId == null) {
-            cmd = new FocusPacket(id);
-        } else {
-            cmd = new FocusPacket(id, focusedSrcId);
-        }
-
-        this.focusedSrcId = id;
-        return cmd;
-    }
-
-    @MessageMapping("/hostRTC/{id}")
-    @SendTo("/sources")
-    public String hostToSrc(@PathVariable String id) {
-        return "id: " + id;
-    }
-
 }

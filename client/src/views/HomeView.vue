@@ -128,6 +128,17 @@
           this.pc.addTrack(track, this.media);
         });
         //TODO: ADD DATACHANNEL 
+        this.messages = this.pc.createDataChannel("Comms");
+
+        this.messages.onopen = event => {
+          console.log(event);
+          this.messages.send("HELLO?");
+        }
+
+        this.messages.onmessage = event => {
+          console.log(`NEW MESSAGE: ${event.data}`);
+        }
+
         let hostOffer = null;
 
         this.pc.createOffer(offerOptions)

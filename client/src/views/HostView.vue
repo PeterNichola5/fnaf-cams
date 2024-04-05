@@ -47,16 +47,36 @@ export default {
       const messagerId = msg.id;
       const content = msg.content;
       let msgIndex = this.connectionIndexs[messagerId];
-      console.log(`BODY: ${JSON.parse(tick.body)}`);
 
       //Checks to see if a connection with the client has been initialized
       if(msgIndex === undefined) {
         this.connectionIndexs[messagerId] = this.connections.length;
         msgIndex = this.connections.length;
-        this.connections.push({id: messagerId, pc: new RTCPeerConnection(), stream: new MediaStream()})
+        this.connections.push({
+          id: messagerId, 
+          pc: new RTCPeerConnection(), 
+          stream: new MediaStream(), 
+          messages: null
+        });
+
+        this.connections[msgIndex].pc.ondatachannel = event => {
+          this.connections[msgIndex].messages = event.channel;
+
+          this.connections[msgIndex].messages.onopen = event => {
+            console.log(event);
+            this.connections[msgIndex].messages.send("INITIAL MESSAGE");
+          }
+
+          this.connections[msgIndex].messages.onmessage = event => {
+            console.log(`MESSAGE: ${event.data}`);
+          }
+        }
+
+        
+
         this.connections[msgIndex].pc.ontrack = e => {
-                this.connections[msgIndex].stream = e.streams[0];
-              }
+          this.connections[msgIndex].stream = e.streams[0];
+        }
         console.log(this.connections);
       }
 
