@@ -106,6 +106,7 @@ export default {
 
     unsub() {
       this.rtcSub.unsubscribe();
+      this.$router.push({name: 'guard'});
     }
   },
 };

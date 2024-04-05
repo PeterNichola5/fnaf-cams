@@ -1,6 +1,6 @@
 <template>
     <main>
-        <button :class="{noSrc: !hasValidSrc}">{{ name }}</button>
+        <button :class="{noSrc: !hasValidSrc}" @click="changeCam">{{ name }}</button>
     </main>
 </template>
 
@@ -15,6 +15,12 @@
         computed: {
             hasValidSrc() {
                 return this.cam.src !== null;
+            }
+        },
+        methods: {
+            changeCam() {
+                console.log('button pressed');
+                this.$store.commit('SET_CURRENT_STREAM', this.cam);
             }
         }
     }

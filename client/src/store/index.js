@@ -17,7 +17,8 @@ export function createStore() {
           {camera: '02', src: null},
           {camera: '03', src: null},
           {camera: '04', src: null}
-        ]
+        ],
+        currentCam: null,
       },
     },
 
@@ -73,6 +74,10 @@ export function createStore() {
             break;
           }
         }
+      },
+      SET_CURRENT_STREAM(state, cam) {
+        this.state.hostProperties.currentCam = cam;
+        console.log(this.state.hostProperties);
       }
 
     },
