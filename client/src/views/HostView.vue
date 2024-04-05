@@ -2,12 +2,12 @@
     <main>
       <div>
         <div v-if="!this.$store.state.hostProperties.connections[0]">PLEASE WAIT FOR SOURCES TO CONNECT</div>
-        <div v-else>
-          <ul>
-            <li v-for="connection in this.$store.state.hostProperties.connections" :key="connection.id">
-              <video  ref="video" :srcObject="connection.stream" autoplay></video>
-            </li>
-          </ul>
+        <div id="container" v-else>
+          <StreamList />
+          <footer>
+            <HudComponent />
+          </footer>
+          
         </div>
       </div>
       <div>
@@ -18,14 +18,18 @@
 
 <script>
 
-// import SockJS from "sockjs-client/dist/sockjs";
-// import Stomp from "webstomp-client";
+import HudComponent from '../components/HudComponent.vue';
+import StreamList from '../components/StreamList.vue';
 
 export default {
   data() {
     return {
       rtcSub: null
     };
+  },
+  components: {
+    HudComponent,
+    StreamList
   },
 
   mounted() {
@@ -87,8 +91,9 @@ export default {
                 else this.stompClient.send("app/end-of-candidates/" + messagerId, null);
               });
 
-
-
+              console.log(messagerId);
+              this.$store.commit('LINK_SRC_TO_CAMERA', messagerId);
+              console.log(this.$store.state.hostProperties.cameras);
               this.stompClient.send("/app/open-status");
             });
         break;
@@ -103,14 +108,13 @@ export default {
       this.rtcSub.unsubscribe();
     }
   },
-
-  components: {
-  }
 };
 </script>
 
-<style>
-
+<style scoped>
+  main {
+    width: 100%;
+  }
   button {
   
     font-family: "Press Start 2P";
@@ -123,5 +127,17 @@ export default {
     display: inline-block;
     z-index: 100004;
     cursor: pointer;
+  }
+
+  #container {
+    display: flex;
+    flex-direction: column;
+    width: 100%;
+  }
+
+  footer {
+    width: 100vw;
+    display: flex;
+    justify-content: end;
   }
 </style>

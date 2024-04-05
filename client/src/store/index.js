@@ -12,6 +12,12 @@ export function createStore() {
       hostProperties: {
         connectionIndexes: {},
         connections: [],
+        cameras: [
+          {camera: '01', src: null},
+          {camera: '02', src: null},
+          {camera: '03', src: null},
+          {camera: '04', src: null}
+        ]
       },
     },
 
@@ -54,6 +60,19 @@ export function createStore() {
       },
       ADD_ICE_CANDIDATE(state, update) {
         this.state.hostProperties.connections[update.index].pc.addIceCandidate(update.candidate);
+      },
+      LINK_SRC_TO_CAMERA(state, id) {
+        console.log('init');
+        const source = state.hostProperties.connections[state.hostProperties.connectionIndexes[id]];
+        console.log(source);
+        for(let obj of state.hostProperties.cameras) {
+          console.log(obj);
+          if(obj.src === null) {
+            console.log('setting');
+            obj.src = source;
+            break;
+          }
+        }
       }
 
     },
