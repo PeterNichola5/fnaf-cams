@@ -1,10 +1,10 @@
 <template>
     <main>
       <div>
-        <div v-if="!connections[0]">PLEASE WAIT FOR SOURCES TO CONNECT</div>
+        <div v-if="!this.$store.state.hostProperties.connections[0]">PLEASE WAIT FOR SOURCES TO CONNECT</div>
         <div v-else>
           <ul>
-            <li v-for="connection in connections" :key="connection.id">
+            <li v-for="connection in this.$store.state.hostProperties.connections" :key="connection.id">
               <video  ref="video" :srcObject="connection.stream" autoplay></video>
             </li>
           </ul>
@@ -24,8 +24,6 @@
 export default {
   data() {
     return {
-      connectionIndexs: {},
-      connections: [],
       rtcSub: null
     };
   },
@@ -46,49 +44,38 @@ export default {
       const msgType = msg.type;
       const messagerId = msg.id;
       const content = msg.content;
-      let msgIndex = this.connectionIndexs[messagerId];
+      let msgIndex = this.$store.getters.getConnectionIndexById(messagerId);
 
       //Checks to see if a connection with the client has been initialized
       if(msgIndex === undefined) {
-        this.connectionIndexs[messagerId] = this.connections.length;
-        msgIndex = this.connections.length;
-        this.connections.push({
+        this.$store.commit('ADD_CONNECTION_INDEX', messagerId);
+        msgIndex = this.$store.state.hostProperties.connections.length;
+
+        const connection = {
           id: messagerId, 
           pc: new RTCPeerConnection(), 
           stream: new MediaStream(), 
           messages: null
-        });
-
-        this.connections[msgIndex].pc.ondatachannel = event => {
-          this.connections[msgIndex].messages = event.channel;
-
-          this.connections[msgIndex].messages.onopen = event => {
-            console.log(event);
-            this.connections[msgIndex].messages.send("INITIAL MESSAGE");
-          }
-
-          this.connections[msgIndex].messages.onmessage = event => {
-            console.log(`MESSAGE: ${event.data}`);
-          }
         }
 
-        
-
-        this.connections[msgIndex].pc.ontrack = e => {
-          this.connections[msgIndex].stream = e.streams[0];
-        }
-        console.log(this.connections);
+        this.$store.commit('ADD_WEBRTC_CONNECTION', connection);
       }
 
-      const peerConnection = this.connections[msgIndex].pc;
+      const peerConnection = this.$store.state.hostProperties.connections[msgIndex].pc;
+      let connectionUpdate = {
+        index: msgIndex
+      };
+
       switch(msgType) {
         case 'ICE_CANDIDATE':
           //HANDLE ICE CANDIDATE
-          peerConnection.addIceCandidate(content);
+          connectionUpdate.candidate = content;
+          this.$store.commit('ADD_ICE_CANDIDATE', connectionUpdate);
           this.stompClient.send("/app/open-status");
         break;
         case 'OFFER':
           //HANDLE OFFER
+          
           peerConnection.setRemoteDescription(content)
             .then(() => peerConnection.createAnswer())
             .then(answer => peerConnection.setLocalDescription(answer))
