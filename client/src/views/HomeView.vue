@@ -12,19 +12,18 @@
 </template>
 
 <script>
-  import SockJS from "sockjs-client/dist/sockjs";
-  import Stomp from "webstomp-client";
+  // import SockJS from "sockjs-client/dist/sockjs";
+  // import Stomp from "webstomp-client";
 
   export default {
     data() {
       return {
         devices: null,
         media: null,
-        isLightOn: false,
-        send_message: null,
         connected: false,
         background: 'black',
         pc: null,
+        messages: null,
         pendingIceCandidates:[]
 
       };
@@ -128,6 +127,7 @@
         this.media.getTracks().forEach(track => {
           this.pc.addTrack(track, this.media);
         });
+        //TODO: ADD DATACHANNEL 
         let hostOffer = null;
 
         this.pc.createOffer(offerOptions)
@@ -139,7 +139,6 @@
             this.pc.addEventListener('icecandidate', e => {
               console.log('new ICE candidate found');
 
-              //TODO: send ice candidates to pending ice candidates unless remote description has been set
               console.log(`LC: ${this.pc.localDescription}`);
               if(e.candidate) {
                 this.pendingIceCandidates.push(e.candidate);

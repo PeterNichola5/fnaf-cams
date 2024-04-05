@@ -1,10 +1,19 @@
 <template>
-    <main><div>
-      <div v-if="!connections[0]">PLEASE WAIT</div>
-      <div v-else>
-        <video ref="video" :srcObject="connections[0].stream" autoplay></video>
+    <main>
+      <div>
+        <div v-if="!connections[0]">PLEASE WAIT FOR SOURCES TO CONNECT</div>
+        <div v-else>
+          <ul>
+            <li v-for="connection in connections" :key="connection.id">
+              <video  ref="video" :srcObject="connection.stream" autoplay></video>
+            </li>
+          </ul>
+        </div>
       </div>
-    </div></main>
+      <div>
+        <button @click="unsub">Start</button>
+      </div>
+    </main>
 </template>
 
 <script>
@@ -16,13 +25,14 @@ export default {
   data() {
     return {
       connectionIndexs: {},
-      connections: []
+      connections: [],
+      rtcSub: null
     };
   },
 
   mounted() {
     this.stompClient = this.$store.state.stompClient;
-    this.stompClient.subscribe("/topic/webrtc_msg", this.handleMsg);
+    this.rtcSub = this.stompClient.subscribe("/topic/webrtc_msg", this.handleMsg);
   },
 
   beforeUnmount() {
@@ -45,13 +55,11 @@ export default {
         msgIndex = this.connections.length;
         this.connections.push({id: messagerId, pc: new RTCPeerConnection(), stream: new MediaStream()})
         this.connections[msgIndex].pc.ontrack = e => {
-                console.log(e.streams);
                 this.connections[msgIndex].stream = e.streams[0];
               }
         console.log(this.connections);
       }
 
-      console.log(this.connections[msgIndex].pc);
       const peerConnection = this.connections[msgIndex].pc;
       switch(msgType) {
         case 'ICE_CANDIDATE':
@@ -67,9 +75,7 @@ export default {
             .then(() => {
               this.stompClient.send(`/app/answer/${messagerId}`, JSON.stringify(peerConnection.localDescription));
               peerConnection.addEventListener('icecandidate', e => {
-                console.log('new ICE candidate found');
 
-                //TODO: send ice candidates to pending ice candidates unless remote description has been set
                 if(e.candidate) this.stompClient.send("/app/ice-candidate/" + messagerId, JSON.stringify(e.candidate));
                 else this.stompClient.send("app/end-of-candidates/" + messagerId, null);
               });
@@ -84,6 +90,10 @@ export default {
         break;
       }
  
+    },
+
+    unsub() {
+      this.rtcSub.unsubscribe();
     }
   },
 
@@ -91,3 +101,20 @@ export default {
   }
 };
 </script>
+
+<style>
+
+  button {
+  
+    font-family: "Press Start 2P";
+    color: white;
+    position: fixed;
+    font-size: 2vmin;
+    border: 0.625vmin solid white;
+    padding: 0.625vmin;
+    background: #333;
+    display: inline-block;
+    z-index: 100004;
+    cursor: pointer;
+  }
+</style>
