@@ -31,7 +31,6 @@
     button {
         font-family: "Press Start 2P";
         color: #fcfcfc;
-        position: fixed;
         font-size: 1.5vmin;
         text-align: left;
         border: 0.18rem solid #fcfcfc;
@@ -42,6 +41,10 @@
         display: inline-block;
         z-index: 100004;
         cursor: pointer;
+    }
+
+    main {
+        max-width: max-content;
     }
 
     .noSrc {

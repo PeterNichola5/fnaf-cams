@@ -106,6 +106,7 @@ export default {
 
     unsub() {
       this.rtcSub.unsubscribe();
+      this.$store.commit('SET_CURRENT_STREAM', this.$store.state.hostProperties.cameras[0]);
       this.$router.push({name: 'guard'});
     }
   },

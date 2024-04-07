@@ -35,24 +35,24 @@ export default {
     #cam01 {
         position: relative;
         top: 330px;
-        left: 525px;
+        left: 510px;
     }
 
     #cam02 {
         position: relative;
-        top: 205px;
+        top: 175px;
         left: 260px;
     }
 
     #cam03 {
         position: relative;
-        top: 180px;
-        left: 80px;
+        top: 120px;
+        left: 60px;
     }
 
     #cam04 {
         position: relative;
-        top: 20px;
-        left: 510px;
+        top: -80px;
+        left: 500px;
     }
 </style>

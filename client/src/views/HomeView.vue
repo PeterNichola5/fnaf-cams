@@ -34,7 +34,7 @@
 
       availableDevices.getUserMedia({
         audio: true,
-        video: { width: 500, height: 500, facingMode: 'environment'},
+        video: { width: 1920, height: 1080, facingMode: 'environment'},
       }).then(stream => {
         this.media = stream;
         this.connect();
