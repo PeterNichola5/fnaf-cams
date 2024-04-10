@@ -21,8 +21,8 @@
     }
 
     video {
-        height: 250px;
-        width: 250px;
+        height: 200px;
+        filter: grayscale();
         border: 5px grey solid;
     }
 </style>

@@ -92,7 +92,6 @@ export default {
               });
 
               console.log(messagerId);
-              this.$store.commit('LINK_SRC_TO_CAMERA', messagerId);
               console.log(this.$store.state.hostProperties.cameras);
               this.stompClient.send("/app/open-status");
             });
@@ -106,7 +105,7 @@ export default {
 
     unsub() {
       this.rtcSub.unsubscribe();
-      this.$store.commit('SET_CURRENT_STREAM', this.$store.state.hostProperties.cameras[0]);
+      this.$store.commit('BEGIN_GAME');
       this.$router.push({name: 'guard'});
     }
   },

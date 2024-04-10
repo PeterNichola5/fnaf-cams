@@ -9,6 +9,7 @@ export function createStore() {
       role: '',
       socket: null,
       stompClient: null,
+      srcConnection: null,
       hostProperties: {
         connectionIndexes: {},
         connections: [],
@@ -33,11 +34,15 @@ export function createStore() {
         this.state.socket = new SockJS(url);
         this.state.stompClient = Stomp.over(this.state.socket);
       },
+      SET_CLIENT_CONNECTION(state, connection) {
+        state.srcConnection = connection;
+      },
 
       ADD_CONNECTION_INDEX(state, messagerId) {
         this.state.hostProperties.connectionIndexes[messagerId] = this.state.hostProperties.connections.length;
       },
       ADD_WEBRTC_CONNECTION(state, connection) {
+
         const msgIndex = this.state.hostProperties.connections.length;
 
         this.state.hostProperties.connections.push(connection);
@@ -47,11 +52,22 @@ export function createStore() {
 
           this.state.hostProperties.connections[msgIndex].messages.onopen = event => {
             console.log(event);
-            this.state.hostProperties.connections[msgIndex].messages.send("INITIAL MESSAGE");
           }
 
           this.state.hostProperties.connections[msgIndex].messages.onmessage = event => {
             console.log(`MESSAGE: ${event.data}`);
+          }
+
+          //Links new connection source to camera role and sends msg to src
+          const source = this.state.hostProperties.connections[msgIndex];
+          console.log(source);
+          for(let obj of state.hostProperties.cameras) {
+            console.log(obj);
+            if(obj.src === null) {
+              obj.src = source;
+              source.messages.send(`CAM ${obj.camera}`);
+              break;
+            }
           }
         }
 
@@ -62,22 +78,18 @@ export function createStore() {
       ADD_ICE_CANDIDATE(state, update) {
         this.state.hostProperties.connections[update.index].pc.addIceCandidate(update.candidate);
       },
-      LINK_SRC_TO_CAMERA(state, id) {
-        console.log('init');
-        const source = state.hostProperties.connections[state.hostProperties.connectionIndexes[id]];
-        console.log(source);
-        for(let obj of state.hostProperties.cameras) {
-          console.log(obj);
-          if(obj.src === null) {
-            console.log('setting');
-            obj.src = source;
-            break;
-          }
-        }
-      },
       SET_CURRENT_STREAM(state, cam) {
+        console.log(cam);
+        this.state.hostProperties.currentCam.src.messages.send('OFF');
         this.state.hostProperties.currentCam = cam;
-        console.log(this.state.hostProperties);
+        cam.src.messages.send('ON');
+      },
+      BEGIN_GAME(state) {
+        state.hostProperties.currentCam = state.hostProperties.cameras[0];
+        for(let camera of state.hostProperties.cameras) {
+          camera.src.messages.send('START');
+        }
+        state.hostProperties.cameras[0].src.messages.send('ON');
       }
 
     },

@@ -1,13 +1,11 @@
 
 
 <template>
-  <div v-if="!connected">Waiting for connection</div>
+  <div v-if="!connected">WAITING FOR CONNECTION TO FAZBEAR SERVERS . . .</div>
   <main v-else>
-    HOME
-    <p>{{ devices }}</p>
-    <div>
-      <video ref="video" :srcObject="media" autoplay></video>
-    </div>
+    <h2>YOU ARE <span>{{ camNum }}</span></h2>
+    <p>THIS DEVICE HAS BEEN ASSINGED A SOURCE ROLE</p>
+    <p>PLEASE SET THE DEVICE AT ITS ASSINGED SPOT AND STANDBY UNTIL THE HOST BEGINS THE GAME</p>
   </main>
 </template>
 
@@ -21,11 +19,10 @@
         devices: null,
         media: null,
         connected: false,
-        background: 'black',
         pc: null,
         messages: null,
+        camNum: null,
         pendingIceCandidates:[]
-
       };
     },
     mounted() {
@@ -40,9 +37,7 @@
         this.connect();
       });
     },
-  //   beforeUnmount() {
-  //     this.stompClient.disconnect({});
-  //   },
+
     methods: {
       connect() {
         //Initializes websocket connection
@@ -68,9 +63,7 @@
               if(this.$store.state.role === 'HOST') {
                 this.$router.push({ name: 'host' });
               } else {
-                // this.stompClient.subscribe("/user/topic/sources", srcTick => {
-                //   this.background = JSON.parse.apply(srcTick.body).isFocused ? 'white' : 'black';
-                // });
+
                 this.establishOffer();
 
                 //TODO: split into its own method for readability
@@ -93,9 +86,6 @@
                       //HANDLE OFFER
                       this.pc.setRemoteDescription(content).then(() => {
                         this.stompClient.send('/app/open-status');
-
-                        
-
                       });
                     break;
                     default:
@@ -127,16 +117,20 @@
         this.media.getTracks().forEach(track => {
           this.pc.addTrack(track, this.media);
         });
-        //TODO: ADD DATACHANNEL 
+
         this.messages = this.pc.createDataChannel("Comms");
 
         this.messages.onopen = event => {
           console.log(event);
-          this.messages.send("HELLO?");
         }
 
         this.messages.onmessage = event => {
           console.log(`NEW MESSAGE: ${event.data}`);
+          if(event.data.includes('CAM')) {
+            this.camNum = event.data;
+          } else if(event.data.includes('START')) {
+            this.$router.push({ name: 'cam' });
+          }
         }
 
         let hostOffer = null;
@@ -146,14 +140,9 @@
             hostOffer = result;
             this.pc.setLocalDescription(result);
           }).then(() => {
-            console.log('pls:' + this.pc.localDescription);
             this.pc.addEventListener('icecandidate', e => {
-              console.log('new ICE candidate found');
-
-              console.log(`LC: ${this.pc.localDescription}`);
               if(e.candidate) {
                 this.pendingIceCandidates.push(e.candidate);
-                console.log(this.pendingIceCandidates);
               }
               else {
                 this.pendingIceCandidates.forEach(candidate => {
@@ -163,6 +152,13 @@
               }
             });
             this.stompClient.send("/app/offer", JSON.stringify(hostOffer));
+
+            const connection = {
+              pc: this.pc,
+              messages: this.messages
+            };
+
+            this.$store.commit('SET_CLIENT_CONNECTION', connection);
             
           });
         
