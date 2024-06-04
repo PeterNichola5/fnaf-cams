@@ -5,13 +5,11 @@
         <div id="container" v-else>
           <StreamList />
           <footer>
+            <button @click="unsub">Start</button>
             <HudComponent />
           </footer>
           
         </div>
-      </div>
-      <div>
-        <button @click="unsub">Start</button>
       </div>
     </main>
 </template>
@@ -46,9 +44,10 @@ export default {
       this.stompClient.send('/app/processing-status');
       const msg = JSON.parse(tick.body);
       const msgType = msg.type;
-      const messagerId = msg.id;
+      const messagerId = msg.senderId;
       const content = msg.content;
       let msgIndex = this.$store.getters.getConnectionIndexById(messagerId);
+      console.log('Corresponding Client Connection: ' + msgIndex);
 
       //Checks to see if a connection with the client has been initialized
       if(msgIndex === undefined) {
@@ -119,8 +118,8 @@ export default {
   button {
   
     font-family: "Press Start 2P";
+    height: 2rem;
     color: white;
-    position: fixed;
     font-size: 2vmin;
     border: 0.625vmin solid white;
     padding: 0.625vmin;
@@ -139,6 +138,7 @@ export default {
   footer {
     width: 100vw;
     display: flex;
-    justify-content: end;
+    justify-content: space-between;
+    align-items: end;
   }
 </style>

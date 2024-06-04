@@ -37,13 +37,15 @@ export function createStore() {
       SET_CLIENT_CONNECTION(state, connection) {
         state.srcConnection = connection;
       },
-
       ADD_CONNECTION_INDEX(state, messagerId) {
         this.state.hostProperties.connectionIndexes[messagerId] = this.state.hostProperties.connections.length;
       },
       ADD_WEBRTC_CONNECTION(state, connection) {
-
+        
         const msgIndex = this.state.hostProperties.connections.length;
+
+        console.log(`Adding new WebRTC connection! Total number of connections before addition: ${msgIndex}`);
+        console.log(connection);
 
         this.state.hostProperties.connections.push(connection);
 

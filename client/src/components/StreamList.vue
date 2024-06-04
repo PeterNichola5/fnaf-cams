@@ -14,6 +14,15 @@
         display: flex;
         flex-wrap: wrap;
         list-style-type: none;
+        max-height: 300px;
+        overflow-y: scroll;
+    }
+
+    ul::-webkit-scrollbar {
+        width: 1rem;
+        padding-right: 0.2rem;
+        background-color: grey;
+        border-radius: 3rem;
     }
 
     li {

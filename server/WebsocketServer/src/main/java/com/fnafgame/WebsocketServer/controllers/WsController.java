@@ -44,7 +44,10 @@ public class WsController {
         try {
             //If there are messages in the client's queue, the next message is sent and status is kept as 'PROCESSING'
             WebRTCPacket packet = this.clients.get(id).getNextMsg();
-            simpMessagingTemplate.convertAndSend("/topic/webrtc_msg", packet);
+
+            if(id.equals(this.hostId)) simpMessagingTemplate.convertAndSend("/topic/webrtc_msg", packet);
+            else simpMessagingTemplate.convertAndSendToUser(id, "/queue/host_msg", packet);
+            
         } catch(NoSuchElementException e) {
             this.clients.get(id).setStatus("OPEN");
         }
@@ -73,6 +76,7 @@ public class WsController {
 
         this.clients.put(user.getName(), new Client(user.getName()));
 
+
         return role;
     }
 
@@ -81,7 +85,7 @@ public class WsController {
     public void sendAnswerToUser(@RequestBody SDP responseSdp, @DestinationVariable String srcId) {
         System.out.println("answer received . . . \n============\n");
 
-        WebRTCPacket<SDP> answer = new WebRTCPacket<>(this.hostId, WebRTCPacketType.ANSWER, responseSdp);
+        WebRTCPacket<SDP> answer = new WebRTCPacket<>(this.hostId, srcId, WebRTCPacketType.ANSWER, responseSdp);
 
         System.out.println("Packet Constructed ------------[ANSWER]------------: \n");
 
@@ -100,7 +104,7 @@ public class WsController {
 
         WebRTCPacket<SDP> offer = null;
         String userId = principal.getName();
-        offer = new WebRTCPacket<>(userId, WebRTCPacketType.OFFER, sdp);
+        offer = new WebRTCPacket<>(userId, this.hostId, WebRTCPacketType.OFFER, sdp);
 
         System.out.println("Packet Constructed ------------[OFFER]------------: \n");
 
@@ -119,7 +123,7 @@ public class WsController {
 
         WebRTCPacket<ICECandidate> newCandidate = null;
         String userId = principal.getName();
-        newCandidate = new WebRTCPacket<>(userId, WebRTCPacketType.ICE_CANDIDATE, iceCandidate);
+        newCandidate = new WebRTCPacket<>(userId, this.hostId, WebRTCPacketType.ICE_CANDIDATE, iceCandidate);
 
         System.out.println("Packet Constructed: \n");
 
@@ -135,31 +139,35 @@ public class WsController {
     public void sendCandidateToHost(@RequestBody ICECandidate iceCandidate, @DestinationVariable String srcId) {
         System.out.println("candidate received . . . \n============\n");
 
-        WebRTCPacket<ICECandidate> newCandidate = new WebRTCPacket<>(this.hostId, WebRTCPacketType.ICE_CANDIDATE, iceCandidate);
+        System.out.println("FROM SOURCE TO USER: " + srcId);
+
+        WebRTCPacket<ICECandidate> newCandidate = new WebRTCPacket<>(this.hostId, srcId, WebRTCPacketType.ICE_CANDIDATE, iceCandidate);
 
         System.out.println("Packet Constructed: \n");
+
+        System.out.println("ICE: " + newCandidate.toString());
 
         //Checks whether to store candidate in queue or to send it straight away
         if(this.clients.get(srcId).getStatus().equals("PROCESSING")) {
             this.clients.get(srcId).addToBacklog(newCandidate);
         } else {
-            simpMessagingTemplate.convertAndSendToUser(srcId, "/topic/webrtc_msg", newCandidate);
+            simpMessagingTemplate.convertAndSendToUser(srcId, "/queue/host_msg", newCandidate);
         }
     }
 
     @MessageMapping("/end-of-candidates")
     public void endClientCandidates(Principal user) {
-        WebRTCPacket<ICECandidate> end = new WebRTCPacket<>(user.getName(), WebRTCPacketType.ICE_CANDIDATE, null);
+        WebRTCPacket<ICECandidate> end = new WebRTCPacket<>(user.getName(), this.hostId, WebRTCPacketType.ICE_CANDIDATE, null);
         if(this.clients.get(this.hostId).getStatus().equals("PROCESSING")) {
             this.clients.get(this.hostId).addToBacklog(end);
         } else {
-            simpMessagingTemplate.convertAndSend("/queue/host_msg", end);
+            simpMessagingTemplate.convertAndSend("/topic/webrtc_msg", end);
         }
     }
 
     @MessageMapping("/end-of-candidates/{srcId}")
     public void endClientCandidates(@DestinationVariable String srcId) {
-        WebRTCPacket<ICECandidate> end = new WebRTCPacket<>(this.hostId, WebRTCPacketType.ICE_CANDIDATE, null);
+        WebRTCPacket<ICECandidate> end = new WebRTCPacket<>(this.hostId, srcId, WebRTCPacketType.ICE_CANDIDATE, null);
         if(this.clients.get(srcId).getStatus().equals("PROCESSING")) {
             this.clients.get(srcId).addToBacklog(end);
         } else {
