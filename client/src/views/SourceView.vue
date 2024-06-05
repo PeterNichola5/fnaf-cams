@@ -1,5 +1,9 @@
 <template>
-    <div :class="{watched: isFocused}" >{{ focus }}</div>
+    <div id="win-screen" v-if="this.$store.state.gameWon">SECURITY GUARD WINS</div>
+    <div v-else :class="{watched: isFocused}" >
+        <p id="time">{{ this.$store.state.time }}</p>
+        <p>{{ focus }}</p>
+    </div>
 </template>
 
 <script>
@@ -23,6 +27,12 @@
                 } else if(event.data.includes('OFF')) {
                     this.focus = 'NOT BEING FOCUSED';
                     this.isFocused = false;
+                } else if(event.data.includes('TIME')) {
+                    console.log('updating time');
+                    const newTime = event.data.split('TIME=');
+                    this.$store.commit('SET_TIME', newTime[1]);
+                } else if(event.data.includes('WIN')) {
+                    this.$store.commit('SET_GAME_STATE', 'win');
                 }
            }
         }
@@ -38,5 +48,13 @@
     .watched{
         background-color: white;
         color: black;
+    }
+    #win-screen {
+        width: 100vw;
+        height: 100vh;
+        background-color: aquamarine;
+    }
+    div, p {
+        font-family: "Press Start 2P";
     }
 </style>

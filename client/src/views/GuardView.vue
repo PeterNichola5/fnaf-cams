@@ -15,14 +15,6 @@
     export default {
         data() {
             return {
-                time: this.$store.state.time
-            }
-        },
-        watch: {
-            time(val) {
-                for(let camera of this.$store.state.hostProperties.cameras) {
-                    camera.src.messages.send(`TIME=${val}`);
-                }
             }
         },
         components: {
@@ -33,8 +25,19 @@
             currentStream() {
                 console.log(this.$store.state.hostProperties.currentCam);
                 return this.$store.state.hostProperties.currentCam === null ? null : this.$store.state.hostProperties.currentCam.src.stream;
+            },
+            currentTime() {
+                return this.$store.state.time;
             }
-        }
+        },
+        watch: {
+            currentTime(val) {
+                console.log('called');
+                for(let camera of this.$store.state.hostProperties.cameras) {
+                    camera.src.messages.send(`TIME=${val}`);
+                }
+            }
+        },
     }
 </script>
 

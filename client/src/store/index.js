@@ -107,9 +107,15 @@ export function createStore() {
         if(gameState === 'win') {
           state.gameLost = false;
           state.gameWon = true;
+          state.gameStarted = false;
+        } else if (gameState === 'begin') {
+          state.gameLost = false;
+          state.gameWon = false;
+          state.gameStarted = true;
         } else {
           state.gameLost = true;
           state.gameWon = false;
+          state.gameStarted = false;
         }
       }
 
