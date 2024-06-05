@@ -105,6 +105,7 @@ export default {
     unsub() {
       this.rtcSub.unsubscribe();
       this.$store.commit('BEGIN_GAME');
+      this.$store.commit('SET_TIME', '12 AM');
       this.$router.push({name: 'guard'});
     }
   },

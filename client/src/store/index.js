@@ -10,6 +10,10 @@ export function createStore() {
       socket: null,
       stompClient: null,
       srcConnection: null,
+      time: '12 AM',
+      gameStarted: false,
+      gameWon: false,
+      gameLost: false,
       hostProperties: {
         connectionIndexes: {},
         connections: [],
@@ -92,6 +96,21 @@ export function createStore() {
           camera.src.messages.send('START');
         }
         state.hostProperties.cameras[0].src.messages.send('ON');
+        state.gameLost = false;
+        state.gameWon = false;
+        state.gameStarted = true;
+      },
+      SET_TIME(state, newTime) {
+        state.time = newTime;
+      },
+      SET_GAME_STATE(state, gameState) {
+        if(gameState === 'win') {
+          state.gameLost = false;
+          state.gameWon = true;
+        } else {
+          state.gameLost = true;
+          state.gameWon = false;
+        }
       }
 
     },

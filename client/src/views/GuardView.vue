@@ -1,19 +1,33 @@
 <template>
+    <div v-if="this.$store.state.gameWon" id="winner">WIN!!!</div>
     <div id="guard-container">
+        <ClockComponent id="clock"/>
         <video  ref="video" :srcObject="currentStream" autoplay></video>
         <div id="hud-container"></div>
         <HudComponent id="hud"/>
-        
-    </div>
-    
+    </div> 
 </template>
 
 <script>
     import HudComponent from '../components/HudComponent.vue';
+    import ClockComponent from '../components/ClockComponent.vue';
 
     export default {
+        data() {
+            return {
+                time: this.$store.state.time
+            }
+        },
+        watch: {
+            time(val) {
+                for(let camera of this.$store.state.hostProperties.cameras) {
+                    camera.src.messages.send(`TIME=${val}`);
+                }
+            }
+        },
         components: {
-            HudComponent
+            HudComponent,
+            ClockComponent
         },
         computed: {
             currentStream() {
@@ -53,5 +67,22 @@
         z-index: 4;
         bottom: 10px;
         right: 0px;
+    }
+    #clock {
+        position: fixed;
+        z-index: 4;
+        font-family: "Press Start 2P";
+        font-size: 3rem;
+        color: #b9b9b9;
+        padding: 1rem;
+    }
+    #winner {
+        position: fixed;
+        width: 100vw;
+        height: 100vh;
+        background-color: rgb(45, 147, 11);
+        z-index: 5;
+        font-family: "Press Start 2P";
+        color: #fcfcfc;
     }
 </style>
