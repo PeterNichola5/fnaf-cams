@@ -39,7 +39,7 @@
 
     #top {
         right: calc((1/3) * 100%);
-        clip-path: inset(1.5rem 0 1.2rem 0);
+        clip-path: inset(1.49rem 0 1.15rem 0);
         animation: top-glitch 1.5s ease infinite 1.5s alternate-reverse;
     }
 
