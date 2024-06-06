@@ -104,15 +104,15 @@ export function createStore() {
         state.time = newTime;
       },
       SET_GAME_STATE(state, gameState) {
-        if(gameState === 'win') {
+        if(gameState === 'WIN') {
           state.gameLost = false;
           state.gameWon = true;
           state.gameStarted = false;
-        } else if (gameState === 'begin') {
+        } else if (gameState === 'IN_PROGRESS') {
           state.gameLost = false;
           state.gameWon = false;
           state.gameStarted = true;
-        } else {
+        } else if(gameState === 'LOST') {
           state.gameLost = true;
           state.gameWon = false;
           state.gameStarted = false;

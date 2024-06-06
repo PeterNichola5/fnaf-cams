@@ -30,7 +30,7 @@
                         this.$store.commit('SET_TIME', '5 AM');
                     break;
                     case '5 AM':
-                        this.$store.commit('SET_GAME_STATE', 'win');
+                        this.$store.commit('SET_GAME_STATE', 'WIN');
                         clearInterval(this.intervalId);
                     break;
                     default:

@@ -130,7 +130,7 @@
             this.camNum = event.data;
           } else if(event.data.includes('START')) {
             this.$store.commit('SET_TIME', '12 AM');
-            this.$store.commit('SET_GAME_STATE', 'begin');
+            this.$store.commit('SET_GAME_STATE', 'IN_PROGRESS');
             this.$router.push({ name: 'cam' });
           }
         }

@@ -32,7 +32,9 @@
                     const newTime = event.data.split('TIME=');
                     this.$store.commit('SET_TIME', newTime[1]);
                 } else if(event.data.includes('WIN')) {
-                    this.$store.commit('SET_GAME_STATE', 'win');
+                    this.$store.commit('SET_GAME_STATE', 'WIN');
+                } else if(event.data.includes('LOST')) {
+                    this.$store.commit('SET_GAME_STATE', 'LOST');
                 }
            }
         }

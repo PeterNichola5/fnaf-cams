@@ -28,13 +28,26 @@
             },
             currentTime() {
                 return this.$store.state.time;
+            },
+            gameStatus() {
+                if(this.$store.state.gameWon) {
+                    return 'WIN';
+                }
+                if(this.$store.state.gameLost) {
+                    return 'LOST';
+                }
+                return 'IN_PROGRESS';
             }
         },
         watch: {
             currentTime(val) {
-                console.log('called');
                 for(let camera of this.$store.state.hostProperties.cameras) {
                     camera.src.messages.send(`TIME=${val}`);
+                }
+            },
+            gameStatus(val) {
+                for(let camera of this.$store.state.hostProperties.cameras) {
+                    camera.src.messages.send(val);
                 }
             }
         },
