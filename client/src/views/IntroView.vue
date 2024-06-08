@@ -1,10 +1,15 @@
 <template>
-    <div></div>
+    <video id="vhs-effect" autoplay loop>
+        <source src="../assets/VHS Static.mp4" type="video/mp4"/>
+    </video>
+    <video id="audio" autoplay loop type="audio/mp3">
+        <source src="../assets/fnaf-1-music-box.mp3"/>
+    </video>
     <div id="backdrop">
         <h1>
-            <span id="bottom" style="--index: 0;">PETER NICHOLAS</span>
-            <span id="middle" style="--index: 1;">PETER NICHOLAS</span>
-            <span id="top" style="--index: 2;">PETER NICHOLAS</span>
+            <span id="bottom">FREDDYISCOMING</span>
+            <span id="middle">FREDDYISCOMING</span>
+            <span id="top">FREDDYISCOMING</span>
         </h1>
     </div>
 </template>
@@ -14,12 +19,25 @@
 
 <style scoped>
     #backdrop {
-        background-color: black;
+        position: absolute;
         width: 100vw;
         height: 100vh;
         display: flex;
         justify-content: center;
         align-items: center;
+    }
+
+    #audio {
+        position: absolute;
+        z-index: -5;
+    }
+
+    #vhs-effect {
+        position: absolute;
+        background-color: black;
+        width: 100vw;
+        height: 100vh;
+        opacity: 100%;
     }
 
     h1 {
@@ -35,6 +53,7 @@
     #bottom {
         left: calc((1/3) * 100%);
         clip-path: inset(2.8rem 0 0 0);
+        
     }
 
     #top {
@@ -45,6 +64,7 @@
 
     #middle {
         clip-path: inset(0 0 2.5rem 0);
+        animation: middle-glitch 1.5s ease infinite 1.5s alternate-reverse;
     }
 
     @keyframes top-glitch {
@@ -90,7 +110,47 @@
             text-shadow: none;
             left: -22.4rem;  
         }
+    }
 
+    @keyframes middle-glitch {
+        0% {
+            text-shadow:-0.25rem -0.25rem 0.15rem red, 0.25rem 0.25rem 0.25rem blue;
 
+        }
+        2% {
+            text-shadow:0.25rem 0.25rem 0.15rem red, -0.25rem -0.25rem 0.15rem blue;
+            left: -.5rem;
+
+        }
+        4%{
+            text-shadow: none;
+            left: -.4rem;
+        }
+        6% {
+            text-shadow:-0.25rem -0.25rem 0.15rem red, 0.25rem 0.25rem 0.15rem blue;
+            left: .3rem;
+        } 
+        7% {
+            text-shadow: none;
+            left: 0rem;
+        }
+        8% {
+            text-shadow:-0.25rem -0.25rem 0.15rem red, 0.25rem 0.25rem 0.15rem blue;
+            left: 0rem;
+        }
+        15% {
+            text-shadow: none;
+            left: 0rem;
+        }
+        15.5% {
+            text-shadow:0.25rem 0.25rem 0.15rem red, -0.25rem -0.25rem 0.15rem blue;
+            left: 0rem;
+        }
+        16% {
+            text-shadow: none;
+        }
+        100% {
+            text-shadow: none; 
+        }
     }
 </style>
