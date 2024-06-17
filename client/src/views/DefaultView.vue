@@ -3,6 +3,7 @@
     <main v-else>
       <button @click="joinRoom">Join A Room</button>
       <button @click="hostRoom">Create A Room</button>
+      <input v-show="joiningGame" v-model="code" placeholder="####-####"/>
     </main>
   </template>
   
@@ -11,13 +12,9 @@
     export default {
       data() {
         return {
-          devices: null,
-          media: null,
           connected: false,
-          pc: null,
-          messages: null,
-          camNum: null,
-          pendingIceCandidates:[]
+          joiningGame: false,
+          code: ""
         };
       },
 
@@ -70,7 +67,7 @@
 
         joinRoom() {
             //go to new view
-            this.$router.push({ name: 'join' });
+            this.joiningGame = !this.joiningGame;
         }
         
       },
