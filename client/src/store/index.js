@@ -7,6 +7,7 @@ export function createStore() {
     state: {
       userId: '',
       role: '',
+      roomCode: '',
       socket: null,
       stompClient: null,
       srcConnection: null,
@@ -33,6 +34,9 @@ export function createStore() {
       },
       SET_ROLE(state, userRole) {
         this.state.role = userRole;
+      },
+      SET_ROOMCODE(state, code) {
+        state.roomCode = code;
       },
       CREATE_WS_CONNECTION(state, url) {
         this.state.socket = new SockJS(url);

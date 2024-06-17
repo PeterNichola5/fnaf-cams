@@ -13,6 +13,7 @@ import org.springframework.web.bind.annotation.CrossOrigin;
 import org.springframework.web.bind.annotation.RequestBody;
 
 import java.security.Principal;
+import java.sql.SQLOutput;
 import java.util.HashMap;
 import java.util.Map;
 import java.util.NoSuchElementException;
@@ -25,6 +26,7 @@ public class WsController {
     private String focusedSrcId;
 
     private Map<String, Client> clients;
+    private Map<String, Room> rooms;
     @Autowired
     private SimpMessagingTemplate simpMessagingTemplate;
 
@@ -33,6 +35,7 @@ public class WsController {
         this.hostId = null;
         this.focusedSrcId = null;
         this.clients = new HashMap<>();
+        this.rooms = new HashMap<>();
     }
 
 
@@ -66,23 +69,36 @@ public class WsController {
     @MessageMapping("/role")
     @SendToUser("/queue/role")
     public RoleAssignment assignRole(@RequestBody String body, Principal user) {
-        RoleAssignment role;
+        RoleAssignment role = null;
         if(body.equals("HOST")) {
-            //generate room code
-            role = new RoleAssignment(user.getName());
+            //generate unique room code
+            String newCode = Room.generateCode();
+            boolean isCodeUnique = false;
 
+            while(!isCodeUnique) {
+                if(rooms.containsKey(newCode)) {
+                    System.out.println("key: " + newCode + " already used");
+                    newCode = Room.generateCode();
+                } else {
+                    isCodeUnique = true;
+                }
+            }
+
+            role = new RoleAssignment(user.getName(), newCode, true);
+            Client newHost = new Client(user.getName());
+            rooms.put(newCode, new Room(newHost, newCode));
         }
 
-        if(this.hostId == null) {
-            role = new RoleAssignment(user.getName(), true);
-            this.hostId = user.getName();
-        } else {
-            role = new RoleAssignment(user.getName(), "code");
-        }
+//        if(this.hostId == null) {
+//            role = new RoleAssignment(user.getName(), true);
+//            this.hostId = user.getName();
+//        } else {
+//            role = new RoleAssignment(user.getName(), "code");
+//        }
+//
+//        this.clients.put(user.getName(), new Client(user.getName()));
 
-        this.clients.put(user.getName(), new Client(user.getName()));
-
-
+        System.out.println(role.getRoomCode());
         return role;
     }
 

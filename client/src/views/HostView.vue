@@ -1,6 +1,7 @@
 <template>
     <main>
       <div>
+        <h1>Room Code: <span>{{ this.$store.state.roomCode }}</span></h1>
         <div v-if="!this.$store.state.hostProperties.connections[0]">PLEASE WAIT FOR SOURCES TO CONNECT</div>
         <div id="container" v-else>
           <StreamList />

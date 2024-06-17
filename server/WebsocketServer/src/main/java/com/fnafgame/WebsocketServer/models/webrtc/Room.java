@@ -4,13 +4,11 @@ import com.fnafgame.WebsocketServer.models.Client;
 
 import java.util.ArrayList;
 import java.util.List;
-import java.util.Map;
+import java.util.Random;
 
 public class Room {
     private final Client host;
-
     private final String code;
-
     private final List<Client> sourceList;
 
     public Room(Client host, String code) {
@@ -21,6 +19,36 @@ public class Room {
 
 
     public String getCode() {
+        return code;
+    }
+
+    public Client getHost() {
+        return host;
+    }
+
+    public List<Client> getSourceList() {
+        return sourceList;
+    }
+
+    public void addSource(Client source) {
+        this.sourceList.add(source);
+    }
+
+    public static String generateCode() {
+        final String characters = "AaBbCcDdEeFfGgHhIiJjKkLlMmNnOoPpQqRrSsTtUuVvWwXxYyZz0123456789";
+        String code = "";
+        Random r = new Random();
+
+        for(int i = 0; i < 4; i++) {
+            code += characters.charAt(r.nextInt(characters.length()));
+        }
+
+        code += "-";
+
+        for(int i = 0; i < 4; i++) {
+            code += characters.charAt(r.nextInt(characters.length()));
+        }
+
         return code;
     }
 }

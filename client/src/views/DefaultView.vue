@@ -39,15 +39,18 @@
               //Grabs role from server and reacts accordingly
               let roleSub = this.stompClient.subscribe("/user/queue/role", tick => {
                 const myRole = JSON.parse(tick.body).role;
+                const roomCode = JSON.parse(tick.body).roomCode;
                 console.log(`assigned role: ${myRole}`);
   
                 this.$store.commit('SET_ROLE', myRole);
+
   
                 //Once role is determined, we don't need to be subscribed to the "/user/queue/role" endpoint any longer
                 roleSub.unsubscribe();
   
                 //Switches to hostview if the role assigned is HOST
                 if(this.$store.state.role === 'HOST') {
+                    this.$store.commit('SET_ROOMCODE', roomCode);
                     this.$router.push({ name: 'host' });
                 } else {
                     console.error(`Unexpected Role: ${this.$store.state.role}`);
