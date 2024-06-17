@@ -65,13 +65,19 @@ public class WsController {
     //Assigns a role to the Client
     @MessageMapping("/role")
     @SendToUser("/queue/role")
-    public RoleAssignment assignRole(Principal user) {
+    public RoleAssignment assignRole(@RequestBody String body, Principal user) {
         RoleAssignment role;
+        if(body.equals("HOST")) {
+            //generate room code
+            role = new RoleAssignment(user.getName());
+
+        }
+
         if(this.hostId == null) {
             role = new RoleAssignment(user.getName(), true);
             this.hostId = user.getName();
         } else {
-            role = new RoleAssignment(user.getName());
+            role = new RoleAssignment(user.getName(), "code");
         }
 
         this.clients.put(user.getName(), new Client(user.getName()));

@@ -4,6 +4,7 @@ import HostView from '../views/HostView.vue';
 import GuardView from '../views/GuardView.vue';
 import SourceView from '../views/SourceView.vue';
 import IntroView from '../views/IntroView.vue';
+import DefaultView from '@/views/DefaultView.vue';
 
 const router = createRouter({
   history: createWebHistory(import.meta.env.BASE_URL),
@@ -11,7 +12,7 @@ const router = createRouter({
     {
       path: '/',
       name: 'home',
-      component: HomeView
+      component: DefaultView
     },
     {
       path: '/host',
