@@ -4,6 +4,7 @@ import com.fnafgame.WebsocketServer.models.Client;
 import com.fnafgame.WebsocketServer.models.webrtc.*;
 import com.fnafgame.WebsocketServer.models.RoleAssignment;
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.http.HttpStatus;
 import org.springframework.messaging.handler.annotation.DestinationVariable;
 import org.springframework.messaging.handler.annotation.MessageMapping;
 import org.springframework.messaging.simp.SimpMessagingTemplate;
@@ -11,6 +12,7 @@ import org.springframework.messaging.simp.annotation.SendToUser;
 import org.springframework.stereotype.Controller;
 import org.springframework.web.bind.annotation.CrossOrigin;
 import org.springframework.web.bind.annotation.RequestBody;
+import org.springframework.web.server.ResponseStatusException;
 
 import java.security.Principal;
 import java.sql.SQLOutput;
@@ -87,6 +89,13 @@ public class WsController {
             role = new RoleAssignment(user.getName(), newCode, true);
             Client newHost = new Client(user.getName());
             rooms.put(newCode, new Room(newHost, newCode));
+        } else {
+            if(rooms.get(body) == null) {
+                throw new ResponseStatusException(HttpStatus.BAD_REQUEST, "Could not locate room");
+            }
+
+            role = new RoleAssignment(user.getName(), body, false);
+            rooms.get(body).addSource(new Client(user.getName()));
         }
 
 //        if(this.hostId == null) {
