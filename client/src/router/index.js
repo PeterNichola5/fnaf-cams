@@ -11,8 +11,13 @@ const router = createRouter({
   routes: [
     {
       path: '/',
-      name: 'home',
+      name: 'root',
       component: DefaultView
+    },
+    {
+      path: '/connected',
+      name: 'source',
+      component: HomeView
     },
     {
       path: '/host',

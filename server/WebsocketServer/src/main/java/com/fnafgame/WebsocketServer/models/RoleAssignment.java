@@ -18,6 +18,12 @@ public class RoleAssignment {
         this.roomCode = roomCode;
     }
 
+    public RoleAssignment() {
+        this.role = null;
+        this.id = null;
+        this.roomCode = null;
+    }
+
 
 
 

@@ -3,7 +3,11 @@
     <main v-else>
       <button @click="joinRoom">Join A Room</button>
       <button @click="hostRoom">Create A Room</button>
-      <input v-show="joiningGame" v-model="code" placeholder="####-####"/>
+      <div v-show="joiningGame">
+        <input v-model="code" placeholder="####-####"/>
+        <button @click="checkCode">JOIN</button>
+      </div>
+      
     </main>
   </template>
   
@@ -38,19 +42,20 @@
                 const myRole = JSON.parse(tick.body).role;
                 const roomCode = JSON.parse(tick.body).roomCode;
                 console.log(`assigned role: ${myRole}`);
+                
+                if(myRole === null) alert("room not found");
+                else {
+                  this.$store.commit('SET_ROLE', myRole);
+                  this.$store.commit('SET_ROOMCODE', roomCode);
+                  //Once role is determined, we don't need to be subscribed to the "/user/queue/role" endpoint any longer
+                  roleSub.unsubscribe();
   
-                this.$store.commit('SET_ROLE', myRole);
-
-  
-                //Once role is determined, we don't need to be subscribed to the "/user/queue/role" endpoint any longer
-                roleSub.unsubscribe();
-  
-                //Switches to hostview if the role assigned is HOST
-                if(this.$store.state.role === 'HOST') {
-                    this.$store.commit('SET_ROOMCODE', roomCode);
+                  //Switches to hostview if the role assigned is HOST
+                  if(this.$store.state.role === 'HOST') {
                     this.$router.push({ name: 'host' });
-                } else {
-                    console.error(`Unexpected Role: ${this.$store.state.role}`);
+                  } else {
+                    this.$router.push({ name: 'source' });
+                  }
                 }
               });
             },
@@ -68,6 +73,10 @@
         joinRoom() {
             //go to new view
             this.joiningGame = !this.joiningGame;
+        },
+
+        checkCode() {
+          this.stompClient.send('/app/role', this.code);
         }
         
       },

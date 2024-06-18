@@ -1,7 +1,7 @@
 
 
 <template>
-  <div v-if="!connected">WAITING FOR CONNECTION TO FAZBEAR SERVERS . . .</div>
+  <div v-if="!connected">ESTABLISHING CONNECTION WITH HOST . . .</div>
   <main v-else>
     <h2>YOU ARE <span>{{ camNum }}</span></h2>
     <p>THIS DEVICE HAS BEEN ASSINGED A SOURCE ROLE</p>
@@ -43,67 +43,38 @@
         //Initializes websocket connection
         this.$store.commit('CREATE_WS_CONNECTION', "https://localhost:8080/ws");
         this.stompClient = this.$store.state.stompClient;
+        this.connected = true;
 
-        this.stompClient.connect({},
-          frame => {
-            this.connected = true;
-            this.$store.commit('SET_ID', frame.headers["user-name"]);
 
-            //Grabs role from server and reacts accordingly
-            let roleSub = this.stompClient.subscribe("/user/queue/role", tick => {
-              const myRole = JSON.parse(tick.body).role;
-              console.log(`assigned role: ${myRole}`);
+        this.establishOffer();
 
-              this.$store.commit('SET_ROLE', myRole);
+        //TODO: split into its own method for readability
+        this.stompClient.subscribe("/user/queue/host_msg", ansTick => {
+          this.stompClient.send('/app/processing-status');
 
-              //Once role is determined, we don't need to be subscribed to the "/user/queue/role" endpoint any longer
-              roleSub.unsubscribe();
+          const msg = JSON.parse(ansTick.body);
+          console.log(msg)
+          const msgType = msg.type;
+          const content = msg.content;
+          console.log(this.pc);
 
-              //Switches to hostview if the role assigned is HOST
-              if(this.$store.state.role === 'HOST') {
-                this.$router.push({ name: 'host' });
-              } else {
-
-                this.establishOffer();
-
-                //TODO: split into its own method for readability
-                this.stompClient.subscribe("/user/queue/host_msg", ansTick => {
-                  this.stompClient.send('/app/processing-status');
-
-                  const msg = JSON.parse(ansTick.body);
-                  console.log(msg)
-                  const msgType = msg.type;
-                  const content = msg.content;
-                  console.log(this.pc);
-
-                  switch(msgType) {
-                    case 'ICE_CANDIDATE':
-                      //HANDLE ICE CANDIDATE
-                      this.pc.addIceCandidate(content);
-                      this.stompClient.send('/app/open-status');
-                    break;
-                    case 'ANSWER':
-                      //HANDLE OFFER
-                      this.pc.setRemoteDescription(content).then(() => {
-                        this.stompClient.send('/app/open-status');
-                      });
-                    break;
-                    default:
-                      console.error("UNKNOWN MESSAGE TYPE: " + msgType);
-                    break;
-                  }
-                  
-                });
-              }
-            });
-
-            this.stompClient.send('/app/role', 'ROLE REQUEST');
-          },
-          error => {
-            console.log(error);
-            this.connected = false;
-          }
-        );
+          switch(msgType) {
+            case 'ICE_CANDIDATE':
+              //HANDLE ICE CANDIDATE
+              this.pc.addIceCandidate(content);
+              this.stompClient.send('/app/open-status');
+            break;
+            case 'ANSWER':
+              //HANDLE OFFER
+              this.pc.setRemoteDescription(content).then(() => {
+                this.stompClient.send('/app/open-status');
+              });
+            break;
+            default:
+              console.error("UNKNOWN MESSAGE TYPE: " + msgType);
+            break;
+          }  
+        });
       },
       establishOffer() {
         const offerOptions = {
@@ -128,6 +99,7 @@
           console.log(`NEW MESSAGE: ${event.data}`);
           if(event.data.includes('CAM')) {
             this.camNum = event.data;
+            this.connected = true;
           } else if(event.data.includes('START')) {
             this.$store.commit('SET_TIME', '12 AM');
             this.$store.commit('SET_GAME_STATE', 'IN_PROGRESS');

@@ -23,8 +23,6 @@ import java.util.NoSuchElementException;
 @CrossOrigin
 @Controller
 public class WsController {
-
-    private String hostId;
     private String focusedSrcId;
 
     private Map<String, Client> clients;
@@ -34,7 +32,6 @@ public class WsController {
 
     public WsController() {
 
-        this.hostId = null;
         this.focusedSrcId = null;
         this.clients = new HashMap<>();
         this.rooms = new HashMap<>();
@@ -50,7 +47,7 @@ public class WsController {
             //If there are messages in the client's queue, the next message is sent and status is kept as 'PROCESSING'
             WebRTCPacket packet = this.clients.get(id).getNextMsg();
 
-            if(id.equals(this.hostId)) simpMessagingTemplate.convertAndSend("/topic/webrtc_msg", packet);
+            if(id.equals(this.hostId)) simpMessagingTemplate.convertAndSend("/topic/webrtc_msg/" + "roomCode", packet);
             else simpMessagingTemplate.convertAndSendToUser(id, "/queue/host_msg", packet);
             
         } catch(NoSuchElementException e) {
@@ -91,7 +88,7 @@ public class WsController {
             rooms.put(newCode, new Room(newHost, newCode));
         } else {
             if(rooms.get(body) == null) {
-                throw new ResponseStatusException(HttpStatus.BAD_REQUEST, "Could not locate room");
+                return new RoleAssignment();
             }
 
             role = new RoleAssignment(user.getName(), body, false);
