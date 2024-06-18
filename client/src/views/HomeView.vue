@@ -40,8 +40,6 @@
 
     methods: {
       connect() {
-        //Initializes websocket connection
-        this.$store.commit('CREATE_WS_CONNECTION', "https://localhost:8080/ws");
         this.stompClient = this.$store.state.stompClient;
         this.connected = true;
 
@@ -50,24 +48,22 @@
 
         //TODO: split into its own method for readability
         this.stompClient.subscribe("/user/queue/host_msg", ansTick => {
-          this.stompClient.send('/app/processing-status');
+          this.stompClient.send('/app/processing-status/' + this.$store.state.roomCode);
 
           const msg = JSON.parse(ansTick.body);
-          console.log(msg)
           const msgType = msg.type;
           const content = msg.content;
-          console.log(this.pc);
 
           switch(msgType) {
             case 'ICE_CANDIDATE':
               //HANDLE ICE CANDIDATE
               this.pc.addIceCandidate(content);
-              this.stompClient.send('/app/open-status');
+              this.stompClient.send('/app/open-status/' + this.$store.state.roomCode);
             break;
             case 'ANSWER':
               //HANDLE OFFER
               this.pc.setRemoteDescription(content).then(() => {
-                this.stompClient.send('/app/open-status');
+                this.stompClient.send('/app/open-status/' + this.$store.state.roomCode);
               });
             break;
             default:
@@ -84,19 +80,13 @@
         };
 
         this.pc = new RTCPeerConnection();
-        console.log(this.media);
         this.media.getTracks().forEach(track => {
           this.pc.addTrack(track, this.media);
         });
 
         this.messages = this.pc.createDataChannel("Comms");
 
-        this.messages.onopen = event => {
-          console.log(event);
-        }
-
         this.messages.onmessage = event => {
-          console.log(`NEW MESSAGE: ${event.data}`);
           if(event.data.includes('CAM')) {
             this.camNum = event.data;
             this.connected = true;
@@ -120,12 +110,12 @@
               }
               else {
                 this.pendingIceCandidates.forEach(candidate => {
-                  this.stompClient.send('/app/ice-candidate', JSON.stringify(candidate));
+                  this.stompClient.send('/app/src-ice-candidate/' + this.$store.state.roomCode, JSON.stringify(candidate));
                 });
-                this.stompClient.send("/app/end-of-candidates", null);
+                this.stompClient.send("/app/src-end-of-candidates/" + this.$store.state.roomCode, null);
               }
             });
-            this.stompClient.send("/app/offer", JSON.stringify(hostOffer));
+            this.stompClient.send("/app/offer/" + this.$store.state.roomCode, JSON.stringify(hostOffer));
 
             const connection = {
               pc: this.pc,

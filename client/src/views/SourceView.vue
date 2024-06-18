@@ -18,7 +18,6 @@
 
         mounted() {
            const connection = this.$store.state.srcConnection;
-           console.log(connection);
            connection.messages.onmessage = event => {
                 console.log(event.data);
                 if(event.data.includes('ON')) {
@@ -28,7 +27,6 @@
                     this.focus = 'NOT BEING FOCUSED';
                     this.isFocused = false;
                 } else if(event.data.includes('TIME')) {
-                    console.log('updating time');
                     const newTime = event.data.split('TIME=');
                     this.$store.commit('SET_TIME', newTime[1]);
                 } else if(event.data.includes('WIN')) {

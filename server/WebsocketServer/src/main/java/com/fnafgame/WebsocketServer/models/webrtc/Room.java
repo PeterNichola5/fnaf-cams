@@ -4,6 +4,7 @@ import com.fnafgame.WebsocketServer.models.Client;
 
 import java.util.ArrayList;
 import java.util.List;
+import java.util.NoSuchElementException;
 import java.util.Random;
 
 public class Room {
@@ -28,6 +29,13 @@ public class Room {
 
     public List<Client> getSourceList() {
         return sourceList;
+    }
+
+    public Client getClientById(String id) {
+        for(Client source : sourceList) {
+            if(source.getId().equals(id)) return source;
+        }
+        throw new NoSuchElementException();
     }
 
     public void addSource(Client source) {

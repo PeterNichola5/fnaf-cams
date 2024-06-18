@@ -19,7 +19,6 @@
         },
         methods: {
             changeCam() {
-                console.log('button pressed');
                 this.$store.commit('SET_CURRENT_STREAM', this.cam);
             }
         }

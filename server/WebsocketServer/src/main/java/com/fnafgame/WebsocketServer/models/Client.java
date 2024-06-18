@@ -9,11 +9,13 @@ import java.util.Queue;
 public class Client {
     private final String id;
 
+    private final String roomCode;
     private Queue<WebRTCPacket> backlog;
     private String status;
 
-    public Client(String id) {
+    public Client(String id, String roomCode) {
         this.id = id;
+        this.roomCode = roomCode;
         status = "OPEN";
         backlog = new LinkedList<>();
     }

@@ -23,7 +23,6 @@
         },
         computed: {
             currentStream() {
-                console.log(this.$store.state.hostProperties.currentCam);
                 return this.$store.state.hostProperties.currentCam === null ? null : this.$store.state.hostProperties.currentCam.src.stream;
             },
             currentTime() {

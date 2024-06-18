@@ -33,22 +33,17 @@ export default {
 
   mounted() {
     this.stompClient = this.$store.state.stompClient;
-    this.rtcSub = this.stompClient.subscribe("/topic/webrtc_msg", this.handleMsg);
-  },
-
-  beforeUnmount() {
-    // this.stompClient.disconnect({});
+    this.rtcSub = this.stompClient.subscribe("/topic/webrtc_msg/" + this.$store.state.roomCode, this.handleMsg);
   },
 
   methods: {
     handleMsg(tick) {
-      this.stompClient.send('/app/processing-status');
+      this.stompClient.send('/app/processing-status/' + this.$store.state.roomCode);
       const msg = JSON.parse(tick.body);
       const msgType = msg.type;
       const messagerId = msg.senderId;
       const content = msg.content;
       let msgIndex = this.$store.getters.getConnectionIndexById(messagerId);
-      console.log('Corresponding Client Connection: ' + msgIndex);
 
       //Checks to see if a connection with the client has been initialized
       if(msgIndex === undefined) {
@@ -75,11 +70,10 @@ export default {
           //HANDLE ICE CANDIDATE
           connectionUpdate.candidate = content;
           this.$store.commit('ADD_ICE_CANDIDATE', connectionUpdate);
-          this.stompClient.send("/app/open-status");
+          this.stompClient.send("/app/open-status/" + this.$store.state.roomCode);
         break;
         case 'OFFER':
           //HANDLE OFFER
-          
           peerConnection.setRemoteDescription(content)
             .then(() => peerConnection.createAnswer())
             .then(answer => peerConnection.setLocalDescription(answer))
@@ -87,13 +81,11 @@ export default {
               this.stompClient.send(`/app/answer/${messagerId}`, JSON.stringify(peerConnection.localDescription));
               peerConnection.addEventListener('icecandidate', e => {
 
-                if(e.candidate) this.stompClient.send("/app/ice-candidate/" + messagerId, JSON.stringify(e.candidate));
-                else this.stompClient.send("app/end-of-candidates/" + messagerId, null);
+                if(e.candidate) this.stompClient.send("/app/host-ice-candidate/" + messagerId, JSON.stringify(e.candidate));
+                else this.stompClient.send("app/host-end-of-candidates/" + messagerId, null);
               });
 
-              console.log(messagerId);
-              console.log(this.$store.state.hostProperties.cameras);
-              this.stompClient.send("/app/open-status");
+              this.stompClient.send("/app/open-status/" + this.$store.state.roomCode);
             });
         break;
         default:
