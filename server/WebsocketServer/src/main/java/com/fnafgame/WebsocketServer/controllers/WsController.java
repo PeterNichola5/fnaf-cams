@@ -40,20 +40,18 @@ public class WsController {
     public void updateStatusToOpen(Principal user, @DestinationVariable String roomCode) {
         String id = user.getName();
         Room room = this.rooms.get(roomCode);
-        String roomHostId = room.getHost().getId();
+        String roomHostId = room.getHostId();
 
         try {
             //If there are messages in the client's queue, the next message is sent and status is kept as 'PROCESSING'
-            WebRTCPacket packet = room.getClientById(id).getNextMsg();
-
-
+            WebRTCPacket packet = room.getNextClientMsgById(id);
 
             if(id.equals(roomHostId)) simpMessagingTemplate.convertAndSend("/topic/webrtc_msg/" + roomCode, packet);
             else simpMessagingTemplate.convertAndSendToUser(id, "/queue/host_msg", packet);
             
         } catch(NoSuchElementException e) {
-            if(id.equals(roomHostId)) room.getHost().setStatus("OPEN");
-            else room.getClientById(id).setStatus("OPEN");
+            if(id.equals(roomHostId)) room.setHostStatus("OPEN");
+            else room.setClientStatusById(id, "OPEN");
         }
     }
 
@@ -61,8 +59,10 @@ public class WsController {
     @MessageMapping("processing-status/{roomCode}")
     public void updateStatusToProcessing(Principal user, @DestinationVariable String roomCode) {
         String id = user.getName();
-        if(id.equals(this.rooms.get(roomCode).getHost().getId())) this.rooms.get(roomCode).getHost().setStatus("PROCESSING");
-        else this.rooms.get(roomCode).getClientById(id).setStatus("PROCESSING");
+        Room room = this.rooms.get(roomCode);
+
+        if(id.equals(room.getHost().getId())) room.getHost().setStatus("PROCESSING");
+        else room.getClientById(id).setStatus("PROCESSING");
     }
 
 
@@ -71,6 +71,7 @@ public class WsController {
     @SendToUser("/queue/role")
     public RoleAssignment assignRole(@RequestBody String body, Principal user) {
         RoleAssignment role = null;
+        String userId = user.getName();
         if(body.equals("HOST")) {
             //generate unique room code
             String newCode = Room.generateCode();
@@ -85,26 +86,17 @@ public class WsController {
                 }
             }
 
-            role = new RoleAssignment(user.getName(), newCode, true);
-            Client newHost = new Client(user.getName(), newCode);
+            role = new RoleAssignment(userId, newCode, true);
+            Client newHost = new Client(userId, newCode);
             rooms.put(newCode, new Room(newHost, newCode));
         } else {
             if(rooms.get(body) == null) {
                 return new RoleAssignment();
             }
 
-            role = new RoleAssignment(user.getName(), body, false);
-            rooms.get(body).addSource(new Client(user.getName(), body));
+            role = new RoleAssignment(userId, body, false);
+            rooms.get(body).addSource(new Client(userId, body));
         }
-
-//        if(this.hostId == null) {
-//            role = new RoleAssignment(user.getName(), true);
-//            this.hostId = user.getName();
-//        } else {
-//            role = new RoleAssignment(user.getName(), "code");
-//        }
-//
-//        this.clients.put(user.getName(), new Client(user.getName()));
 
         System.out.println(role.getRoomCode());
         return role;
@@ -114,15 +106,16 @@ public class WsController {
     @MessageMapping("/answer/{srcId}")
     public void sendAnswerToUser(Principal user, @RequestBody SDP responseSdp, @DestinationVariable String srcId) {
         System.out.println("answer received . . . \n============\n");
+        String userId = user.getName();
 
-        WebRTCPacket<SDP> answer = new WebRTCPacket<>(user.getName(), srcId, WebRTCPacketType.ANSWER, responseSdp);
+        WebRTCPacket<SDP> answer = new WebRTCPacket<>(userId, srcId, WebRTCPacketType.ANSWER, responseSdp);
 
         System.out.println("Packet Constructed ------------[ANSWER]------------: \n");
 
         String roomCode = null;
 
         for(Room room : rooms.values()) {
-            if(room.getHost().getId().equals(user.getName())) {
+            if(room.getHostId().equals(userId)) {
                 roomCode = room.getCode();
                 break;
             }
@@ -133,8 +126,9 @@ public class WsController {
             //TODO: Add handler for null roomCode
         }
 
-        if(this.rooms.get(roomCode).getClientById(srcId).getStatus().equals("PROCESSING")) {
-            this.rooms.get(roomCode).getClientById(srcId).addToBacklog(answer);
+        Room room = this.rooms.get(roomCode);
+        if(room.getClientStatusById(srcId).equals("PROCESSING")) {
+            room.addToClientBacklogById(srcId, answer);
         } else {
             simpMessagingTemplate.convertAndSendToUser(srcId, "/queue/host_msg", answer);
         }
@@ -171,15 +165,15 @@ public class WsController {
 
         Room room = this.rooms.get(roomCode);
 
-        WebRTCPacket<ICECandidate> newCandidate = null;
         String userId = principal.getName();
-        newCandidate = new WebRTCPacket<>(userId, room.getHost().getId(), WebRTCPacketType.ICE_CANDIDATE, iceCandidate);
+        WebRTCPacket<ICECandidate> newCandidate;
+        newCandidate = new WebRTCPacket<>(userId, room.getHostId(), WebRTCPacketType.ICE_CANDIDATE, iceCandidate);
 
         System.out.println("Packet Constructed: \n");
 
         //Checks whether to store candidate in queue or to send it straight away
-        if(room.getHost().getStatus().equals("PROCESSING")) {
-            room.getHost().addToBacklog(newCandidate);
+        if(room.getHostStatus().equals("PROCESSING")) {
+            room.addToHostBacklog(newCandidate);
         } else {
             simpMessagingTemplate.convertAndSend("/topic/webrtc_msg" + roomCode , newCandidate);
         }
@@ -192,7 +186,8 @@ public class WsController {
 
         System.out.println("FROM SOURCE TO USER: " + srcId);
 
-        WebRTCPacket<ICECandidate> newCandidate = new WebRTCPacket<>(user.getName(), srcId, WebRTCPacketType.ICE_CANDIDATE, iceCandidate);
+        WebRTCPacket<ICECandidate> newCandidate;
+        newCandidate = new WebRTCPacket<>(user.getName(), srcId, WebRTCPacketType.ICE_CANDIDATE, iceCandidate);
 
         System.out.println("Packet Constructed: \n");
 
@@ -212,9 +207,11 @@ public class WsController {
             //TODO: Add handler for null roomCode
         }
 
+        Room room = this.rooms.get(roomCode);
+
         //Checks whether to store candidate in queue or to send it straight away
-        if(this.rooms.get(roomCode).getClientById(srcId).getStatus().equals("PROCESSING")) {
-            this.rooms.get(roomCode).getClientById(srcId).addToBacklog(newCandidate);
+        if(room.getClientStatusById(srcId).equals("PROCESSING")) {
+            room.addToClientBacklogById(srcId, newCandidate);
         } else {
             simpMessagingTemplate.convertAndSendToUser(srcId, "/queue/host_msg", newCandidate);
         }
@@ -224,9 +221,11 @@ public class WsController {
     public void endClientCandidates(Principal user, @DestinationVariable String roomCode) {
         Room room = this.rooms.get(roomCode);
 
-        WebRTCPacket<ICECandidate> end = new WebRTCPacket<>(user.getName(), room.getHost().getId(), WebRTCPacketType.ICE_CANDIDATE, null);
-        if(room.getHost().getStatus().equals("PROCESSING")) {
-            room.getHost().addToBacklog(end);
+        WebRTCPacket<ICECandidate> end;
+        end = new WebRTCPacket<>(user.getName(), room.getHost().getId(), WebRTCPacketType.ICE_CANDIDATE, null);
+
+        if(room.getHostStatus().equals("PROCESSING")) {
+            room.addToHostBacklog(end);
         } else {
             simpMessagingTemplate.convertAndSend("/topic/webrtc_msg/" + roomCode, end);
         }
@@ -234,7 +233,10 @@ public class WsController {
 
     @MessageMapping("/host-end-of-candidates/{srcId}")
     public void endClientCandidates(@DestinationVariable String srcId, Principal user) {
-        WebRTCPacket<ICECandidate> end = new WebRTCPacket<>(user.getName(), srcId, WebRTCPacketType.ICE_CANDIDATE, null);
+
+        String userId = user.getName();
+        WebRTCPacket<ICECandidate> end;
+        end = new WebRTCPacket<>(userId, srcId, WebRTCPacketType.ICE_CANDIDATE, null);
 
         String roomCode = null;
 
@@ -252,8 +254,8 @@ public class WsController {
 
         Room room = this.rooms.get(roomCode);
 
-        if(room.getClientById(srcId).getStatus().equals("PROCESSING")) {
-            room.getClientById(srcId).addToBacklog(end);
+        if(room.getClientStatusById(srcId).equals("PROCESSING")) {
+            room.addToClientBacklogById(srcId, end);
         } else {
             simpMessagingTemplate.convertAndSendToUser(srcId, "/queue/host_msg", end);
         }

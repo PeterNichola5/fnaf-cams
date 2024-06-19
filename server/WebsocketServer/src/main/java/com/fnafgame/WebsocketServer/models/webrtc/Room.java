@@ -27,6 +27,26 @@ public class Room {
         return host;
     }
 
+    public String getHostId() {
+        return host.getId();
+    }
+
+    public String getHostStatus() {
+        return host.getStatus();
+    }
+
+    public void setHostStatus(String newStatus) {
+        host.setStatus(newStatus);
+    }
+
+    public WebRTCPacket getNextHostMsg() {
+        return host.getNextMsg();
+    }
+
+    public void addToHostBacklog(WebRTCPacket packet) {
+        host.addToBacklog(packet);
+    }
+
     public List<Client> getSourceList() {
         return sourceList;
     }
@@ -36,6 +56,22 @@ public class Room {
             if(source.getId().equals(id)) return source;
         }
         throw new NoSuchElementException();
+    }
+
+    public String getClientStatusById(String id) {
+        return this.getClientById(id).getStatus();
+    }
+
+    public void setClientStatusById(String id, String newStatus) {
+        this.getClientById(id).setStatus(newStatus);
+    }
+
+    public WebRTCPacket getNextClientMsgById(String id) {
+        return this.getClientById(id).getNextMsg();
+    }
+
+    public void addToClientBacklogById(String id, WebRTCPacket packet) {
+        this.getClientById(id).addToBacklog(packet);
     }
 
     public void addSource(Client source) {
