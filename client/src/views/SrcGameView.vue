@@ -19,7 +19,6 @@
         mounted() {
            const connection = this.$store.state.srcConnection;
            connection.messages.onmessage = event => {
-                console.log(event.data);
                 if(event.data.includes('ON')) {
                     this.focus = 'YOU ARE BEING WATCHED!!!!';
                     this.isFocused = true;

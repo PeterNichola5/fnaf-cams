@@ -1,10 +1,10 @@
 import { createRouter, createWebHistory } from 'vue-router';
-import HomeView from '../views/HomeView.vue';
-import HostView from '../views/HostView.vue';
-import GuardView from '../views/GuardView.vue';
-import SourceView from '../views/SourceView.vue';
+import SrcStartView from '../views/SrcStartView.vue';
+import SrcGameView from '../views/SrcGameView.vue';
+import HostStartView from '../views/HostStartView.vue';
+import HostGameView from '../views/HostGameView.vue';
 import IntroView from '../views/IntroView.vue';
-import DefaultView from '@/views/DefaultView.vue';
+import DefaultView from '../views/DefaultView.vue';
 
 const router = createRouter({
   history: createWebHistory(import.meta.env.BASE_URL),
@@ -17,22 +17,22 @@ const router = createRouter({
     {
       path: '/connected',
       name: 'source',
-      component: HomeView
+      component: SrcStartView
     },
     {
       path: '/host',
       name: 'host',
-      component: HostView
+      component: HostStartView
     },
     {
       path: '/guard',
       name: 'guard',
-      component: GuardView
+      component: HostGameView
     },
     {
       path: '/cam',
       name: 'cam',
-      component: SourceView
+      component: SrcGameView
     },
     {
       path:'/intro',
