@@ -7,9 +7,9 @@
     </video>
     <div id="backdrop">
         <h1>
-            <span id="bottom">FREDDYISCOMING</span>
-            <span id="middle">FREDDYISCOMING</span>
-            <span id="top">FREDDYISCOMING</span>
+            <span id="bottom">PETERNICHOLAS</span>
+            <span id="middle">PETERNICHOLAS</span>
+            <span id="top">PETERNICHOLAS</span>
         </h1>
     </div>
 </template>

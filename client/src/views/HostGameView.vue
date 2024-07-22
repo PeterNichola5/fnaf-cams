@@ -2,7 +2,8 @@
     <div v-if="this.$store.state.gameWon" id="winner">WIN!!!</div>
     <div id="guard-container">
         <ClockComponent id="clock"/>
-        <video  ref="video" :srcObject="currentStream" autoplay></video>
+        <video  id="source" ref="stream" :srcObject="currentStream" autoplay></video>
+        <video  id="overlay" ref="video" :class="{show: this.longView}" src="../assets/viewtoolong.mp4"></video>
         <div id="hud-container"></div>
         <HudComponent id="hud"/>
     </div> 
@@ -11,16 +12,41 @@
 <script>
     import HudComponent from '../components/HudComponent.vue';
     import ClockComponent from '../components/ClockComponent.vue';
+    import {ref} from "vue";
 
     export default {
+        setup() {
+            const video = ref(null);
+            return {
+                video
+            }
+        },
         data() {
             return {
+                timeoutId: null,
+                longView: false
             }
         },
         components: {
             HudComponent,
             ClockComponent
         },
+
+        mounted() {
+            this.beginTimeout();
+        },
+
+        methods: {
+            beginTimeout() {
+                this.video.pause();
+                this.video.load();
+                this.timeoutId = setTimeout(() => {
+                    this.longView = true;
+                    this.video.play().then(() => {});
+                }, 5000);
+            },
+        },
+
         computed: {
             currentStream() {
                 return this.$store.state.hostProperties.currentCam === null ? null : this.$store.state.hostProperties.currentCam.src.stream;
@@ -48,6 +74,11 @@
                 for(let camera of this.$store.state.hostProperties.cameras) {
                     camera.src.messages.send(val);
                 }
+            },
+            currentStream() {
+                clearTimeout(this.timeoutId);
+                this.longView = false;
+                this.beginTimeout();
             }
         },
     }
@@ -58,13 +89,32 @@
         bottom: 10px;
         right: 10px;
     }
-    video {
+    #source {
         position: absolute;
-        min-width: 100%;
-        min-height: 100%;
+        width: 100vw;
+        height: 100vh;
+        object-fit: fill;
         z-index: -1;
         filter: grayscale();
     }
+
+    #overlay {
+        position: absolute;
+        min-width: 100%;
+        min-height: 100%;
+        max-height: 100%;
+        width:100vw;
+        z-index: 1;
+        opacity: 0;
+        object-fit: fill;
+    }
+
+    .show {
+        opacity: 1 !important;
+        transition: opacity 2s;
+    }
+   
+
 
     #hud-container {
         z-index: 3;
