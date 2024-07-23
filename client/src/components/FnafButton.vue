@@ -1,27 +1,53 @@
 <template>
     <main>
-        <button :class="{noSrc: !hasValidSrc}" @click="changeCam">{{ name }}</button>
+        <button ref="button" :class="{noSrc: !hasValidSrc, focused: isfocused}" @click="changeCam">{{ label }}</button>
     </main>
 </template>
 
 <script>
+    import {ref} from 'vue';
     export default {
-        data() {
+        setup() {
+            const button = ref(null);
             return {
-
+                button
             }
         },
-        props: ['cam', 'name'],
+        data() {
+            return {
+                isfocused: false,
+            }
+        },
+        props: ['cam', 'name', 'isDisabled'],
         computed: {
             hasValidSrc() {
                 return this.cam.src !== null;
+            },
+            label() {
+                const nameParts = this.name.split(" ");
+                return this.isDisabled? 'ERROR' : `${nameParts[0]}\n${nameParts[1]}`;
             }
         },
         methods: {
             changeCam() {
-                this.$store.commit('SET_CURRENT_STREAM', this.cam);
+                if(!this.isfocused && this.hasValidSrc) {
+                    this.$emit('cam-viewed', this.name);
+                    console.log(`${this.name} pressed`);
+                    this.isfocused = true;
+                    this.$store.commit('SET_CURRENT_STREAM', this.cam);
+                }
+                
             }
-        }
+        },
+        watch: {
+            isDisabled: function(newVal) {
+                this.button.disabled = newVal;
+
+                if(newVal) {
+                    this.isfocused = false;
+                }
+            }
+        },
     }
 
 </script>
@@ -44,9 +70,23 @@
 
     main {
         max-width: max-content;
+        
+    }
+
+    button:disabled {
+        color:#b8b8b8;
+        cursor: not-allowed;
+        background-color: #2b0404;
+        border-color: #b8b8b8;
+        text-align: center;
     }
 
     .noSrc {
         background: red;
+        cursor: not-allowed;
+    }
+
+    .focused {
+        background: green;
     }
 </style>
